@@ -101,6 +101,11 @@ custom = CustomProfile(
         "llamacpp",
         "llama.cpp",
         "llama-cpp",
+        # Houdry GPU fabric (OpenAI-compatible /v1) — same agent loop as Azure;
+        # configure model.base_url to the fabric host (see docs/HOUDRY.md).
+        "houdry",
+        "houdry-fabric",
+        "fabric",
     ),
     env_vars=(),  # No fixed key — custom endpoint
     base_url="",  # User-configured

@@ -234,6 +234,7 @@ HERMES_OVERLAYS: Dict[str, HermesOverlay] = {
     "azure-foundry": HermesOverlay(
         transport="openai_chat",  # default; overridden by api_mode in config
         base_url_env_var="AZURE_FOUNDRY_BASE_URL",
+        extra_env_vars=("AZURE_FOUNDRY_API_KEY", "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT"),
     ),
     "bedrock": HermesOverlay(
         transport="bedrock_converse",

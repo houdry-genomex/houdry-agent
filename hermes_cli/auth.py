@@ -558,7 +558,7 @@ PROVIDER_REGISTRY: Dict[str, ProviderConfig] = {
         name="Azure Foundry",
         auth_type="api_key",
         inference_base_url="",  # User-provided endpoint
-        api_key_env_vars=("AZURE_FOUNDRY_API_KEY",),
+        api_key_env_vars=("AZURE_FOUNDRY_API_KEY", "AZURE_OPENAI_API_KEY"),
         base_url_env_var="AZURE_FOUNDRY_BASE_URL",
     ),
 }
@@ -7395,9 +7395,19 @@ def _get_azure_foundry_auth_status() -> Dict[str, Any]:
 
     # api_key mode (default)
     try:
-        api_key = get_env_value_prefer_dotenv("AZURE_FOUNDRY_API_KEY") or ""
+        from hermes_cli.azure_openai_env import get_azure_api_key, get_azure_base_url, get_azure_deployment
+
+        api_key = get_azure_api_key()
+        if not info.get("base_url"):
+            info["base_url"] = get_azure_base_url()
+        info["deployment"] = get_azure_deployment()
     except Exception:
-        api_key = os.getenv("AZURE_FOUNDRY_API_KEY", "")
+        try:
+            api_key = get_env_value_prefer_dotenv("AZURE_FOUNDRY_API_KEY") or ""
+        except Exception:
+            api_key = os.getenv("AZURE_FOUNDRY_API_KEY", "") or os.getenv(
+                "AZURE_OPENAI_API_KEY", ""
+            )
     info["logged_in"] = has_usable_secret(api_key)
     return info
 

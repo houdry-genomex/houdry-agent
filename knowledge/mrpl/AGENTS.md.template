@@ -1,0 +1,24 @@
+# MRPL workspace context
+
+This file is a **template**. Copy to `AGENTS.md` in the live knowledge
+workspace (do not invent plant-specific rules here).
+
+## Role
+
+You are assisting with MRPL-oriented engineering and document work using Hermes
+skills under `mrpl/`. Prefer MRPL skills over ad-hoc improvisation.
+
+## Knowledge
+
+- Prefer documents under this workspace (`sources/` when present).
+- Cite file paths and section headings when quoting procedures.
+- If a document is missing, say so — do not invent SOPs, limits, or standards.
+
+## Governance
+
+- READ / ANALYZE: allowed with citations.
+- DRAFT: label outputs as drafts for human review.
+- EXECUTE (mutating systems, ERP/QMS writes, destructive shell): require explicit
+  user approval; refuse if unclear.
+- Do not put secrets, API keys, or credentials into memory or reports.
+- Provider (Azure vs Houdry) is configuration only — do not change workflow by model.

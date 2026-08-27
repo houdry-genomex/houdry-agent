@@ -1,0 +1,43 @@
+{
+  "fixture_notice": "FICTIONAL TEST DATA — not an MRPL SOP, standard, or plant record.",
+  "document_id": "FIX-MRPL-TR-0001",
+  "source_markdown": "sample_technical_report.md",
+  "measurements": [
+    {
+      "tag": "TT-101",
+      "description": "Bearing temperature",
+      "measured": 92,
+      "unit": "deg_C",
+      "nominal": 70
+    },
+    {
+      "tag": "VT-201",
+      "description": "Housing vibration (RMS)",
+      "measured": 4.2,
+      "unit": "mm_per_s",
+      "nominal": 2.0
+    },
+    {
+      "tag": "PT-301",
+      "description": "Discharge pressure",
+      "measured": 1.1,
+      "unit": "bar",
+      "nominal": 1.1
+    },
+    {
+      "tag": "FT-401",
+      "description": "Process flow",
+      "measured": 48,
+      "unit": "m3_per_h",
+      "nominal": 50
+    }
+  ],
+  "thresholds": {
+    "TT-101": { "kind": "gt", "limit": 80 },
+    "VT-201": { "kind": "gt", "limit": 3.5 },
+    "PT-301": { "kind": "range_inclusive", "min": 0.9, "max": 1.3 },
+    "FT-401": { "kind": "abs_percent_deviation_gt", "limit_percent": 5 }
+  },
+  "expected_attention_tags": ["TT-101", "VT-201"],
+  "expected_ok_tags": ["PT-301", "FT-401"]
+}

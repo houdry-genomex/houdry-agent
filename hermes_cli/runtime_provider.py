@@ -346,6 +346,39 @@ def _get_model_config() -> Dict[str, Any]:
             detected = _auto_detect_local_model(base_url)
             if detected:
                 cfg["default"] = detected
+                default = detected
+        # Azure OpenAI env fallbacks (do not affect Houdry/custom fabric).
+        try:
+            from hermes_cli.azure_openai_env import (
+                _PROVIDER_ALIASES,
+                get_azure_base_url,
+                get_azure_deployment,
+            )
+
+            prov_raw = str(cfg.get("provider") or "").strip().lower()
+            prov = _PROVIDER_ALIASES.get(prov_raw, prov_raw)
+            if prov == "azure-foundry":
+                if not (cfg.get("base_url") or "").strip():
+                    env_url = get_azure_base_url()
+                    if env_url:
+                        cfg["base_url"] = env_url
+                if not (str(cfg.get("default") or "").strip()):
+                    dep = get_azure_deployment()
+                    if dep:
+                        cfg["default"] = dep
+            # Houdry fabric shortcut: provider houdry|fabric with no URL → local /v1.
+            if prov_raw in {"houdry", "houdry-fabric", "fabric"} and not (
+                cfg.get("base_url") or ""
+            ).strip():
+                houdry_url = (
+                    _getenv("HOUDRY_BASE_URL", "").strip()
+                    or "http://127.0.0.1:18080/v1"
+                )
+                cfg["base_url"] = houdry_url
+                if not (str(cfg.get("default") or "").strip()):
+                    cfg["default"] = "auto"
+        except Exception:
+            pass
         return cfg
     if isinstance(model_cfg, str) and model_cfg.strip():
         return {"default": model_cfg.strip()}
@@ -618,16 +651,34 @@ def _resolve_runtime_from_pool_entry(
 def resolve_requested_provider(requested: Optional[str] = None) -> str:
     """Resolve provider request from explicit arg, config, then env."""
     if requested and requested.strip():
-        return requested.strip().lower()
+        raw = requested.strip().lower()
+        try:
+            from hermes_cli.azure_openai_env import _PROVIDER_ALIASES
+
+            return _PROVIDER_ALIASES.get(raw, raw)
+        except Exception:
+            return raw
 
     model_cfg = _get_model_config()
     cfg_provider = model_cfg.get("provider")
     if isinstance(cfg_provider, str) and cfg_provider.strip():
-        return cfg_provider.strip().lower()
+        raw = cfg_provider.strip().lower()
+        try:
+            from hermes_cli.azure_openai_env import _PROVIDER_ALIASES
+
+            return _PROVIDER_ALIASES.get(raw, raw)
+        except Exception:
+            return raw
 
     # Prefer the persisted config selection over any stale shell/.env
     # provider override so chat uses the endpoint the user last saved.
-    env_provider = _getenv("HERMES_INFERENCE_PROVIDER", "").strip().lower()
+    # HERMES_LLM_PROVIDER is an alias of HERMES_INFERENCE_PROVIDER (azure|houdry).
+    try:
+        from hermes_cli.azure_openai_env import resolve_llm_provider_override
+
+        env_provider = resolve_llm_provider_override()
+    except Exception:
+        env_provider = _getenv("HERMES_INFERENCE_PROVIDER", "").strip().lower() or None
     if env_provider:
         return env_provider
 
@@ -1457,26 +1508,51 @@ def _resolve_azure_foundry_runtime(
     explicit_api_key = str(explicit_api_key or "").strip()
     explicit_base_url_clean = str(explicit_base_url or "").strip().rstrip("/")
 
-    cfg_provider = str(model_cfg.get("provider") or "").strip().lower()
+    cfg_provider_raw = str(model_cfg.get("provider") or "").strip().lower()
+    try:
+        from hermes_cli.azure_openai_env import _PROVIDER_ALIASES
+
+        cfg_provider = _PROVIDER_ALIASES.get(cfg_provider_raw, cfg_provider_raw)
+    except Exception:
+        cfg_provider = cfg_provider_raw
     cfg_base_url = ""
+    # Track whether the user explicitly set api_mode — do not overwrite with
+    # model-family inference when they did (portal GPT-5.6 Luna samples use
+    # chat.completions + AzureOpenAI api_version).
+    explicit_api_mode = None
     cfg_api_mode = "chat_completions"
     cfg_auth_mode = "api_key"
     cfg_entra: Dict[str, Any] = {}
-    if cfg_provider == "azure-foundry":
+    if cfg_provider == "azure-foundry" or requested_provider in {
+        "azure-foundry",
+        "azure",
+        "azure-openai",
+    }:
         cfg_base_url = str(model_cfg.get("base_url") or "").strip().rstrip("/")
-        cfg_api_mode = _parse_api_mode(model_cfg.get("api_mode")) or "chat_completions"
+        explicit_api_mode = _parse_api_mode(model_cfg.get("api_mode"))
+        cfg_api_mode = explicit_api_mode or "chat_completions"
         cfg_auth_mode = str(model_cfg.get("auth_mode") or "api_key").strip().lower() or "api_key"
         _entra = model_cfg.get("entra")
         if isinstance(_entra, dict):
             cfg_entra = _entra
 
-    # Model-family inference: Azure Foundry deploys GPT-5.x / codex / o1-o4
-    # reasoning models as Responses-API-only.  Calling /chat/completions
-    # against them returns 400 "The requested operation is unsupported."
-    # Upgrade api_mode when the model name matches, unless the user has
-    # explicitly chosen anthropic_messages (Anthropic-style endpoint).
-    effective_model = str(target_model or model_cfg.get("default") or "").strip()
-    if effective_model and cfg_api_mode != "anthropic_messages":
+    # Model-family inference: Azure Foundry often prefers Responses for GPT-5.x
+    # when tools+reasoning are used. Only auto-upgrade when the user did not
+    # pin api_mode (portal Get Started samples use chat.completions).
+    try:
+        from hermes_cli.azure_openai_env import get_azure_deployment
+
+        env_deployment = get_azure_deployment()
+    except Exception:
+        env_deployment = ""
+    effective_model = str(
+        target_model or model_cfg.get("default") or env_deployment or ""
+    ).strip()
+    if (
+        effective_model
+        and not explicit_api_mode
+        and cfg_api_mode != "anthropic_messages"
+    ):
         try:
             from hermes_cli.models import azure_foundry_model_api_mode
 
@@ -1486,12 +1562,38 @@ def _resolve_azure_foundry_runtime(
         if inferred:
             cfg_api_mode = inferred
 
-    env_base_url = _getenv("AZURE_FOUNDRY_BASE_URL", "").strip().rstrip("/")
-    base_url = explicit_base_url_clean or cfg_base_url or env_base_url
+    try:
+        from hermes_cli.azure_openai_env import (
+            build_azure_openai_base_url,
+            normalize_azure_openai_endpoint,
+        )
+
+        if explicit_base_url_clean or cfg_base_url:
+            base_url = build_azure_openai_base_url(
+                api_mode=cfg_api_mode,
+                deployment=effective_model,
+                endpoint=explicit_base_url_clean or cfg_base_url,
+            )
+        else:
+            base_url = build_azure_openai_base_url(
+                api_mode=cfg_api_mode,
+                deployment=effective_model,
+            )
+    except Exception:
+        base_url = (
+            explicit_base_url_clean
+            or cfg_base_url
+            or _getenv("AZURE_FOUNDRY_BASE_URL", "").strip().rstrip("/")
+            or _getenv("AZURE_OPENAI_ENDPOINT", "").strip().rstrip("/")
+        )
+        try:
+            base_url = normalize_azure_openai_endpoint(base_url)
+        except Exception:
+            pass
     if not base_url:
         raise AuthError(
-            "Azure Foundry requires a base URL. Set it via 'hermes model' or "
-            "the AZURE_FOUNDRY_BASE_URL environment variable."
+            "Azure OpenAI / Foundry requires a base URL. Set model.base_url via "
+            "'hermes model', or set AZURE_OPENAI_ENDPOINT / AZURE_FOUNDRY_BASE_URL."
         )
 
     # Anthropic SDK appends /v1/messages itself, so strip any trailing /v1
@@ -1570,23 +1672,32 @@ def _resolve_azure_foundry_runtime(
     api_key = explicit_api_key
     if not api_key:
         try:
-            from hermes_cli.config import get_env_value
-            api_key = get_env_value("AZURE_FOUNDRY_API_KEY") or ""
+            from hermes_cli.azure_openai_env import get_azure_api_key
+
+            api_key = get_azure_api_key()
         except Exception:
             api_key = ""
     if not api_key:
-        api_key = _getenv("AZURE_FOUNDRY_API_KEY", "").strip()
+        api_key = _getenv("AZURE_FOUNDRY_API_KEY", "").strip() or _getenv(
+            "AZURE_OPENAI_API_KEY", ""
+        ).strip()
     if not api_key:
+        try:
+            from hermes_constants import display_hermes_home
+
+            home_hint = display_hermes_home()
+        except Exception:
+            home_hint = "~/.houdry-agent"
         raise AuthError(
-            "Azure Foundry requires an API key. Set AZURE_FOUNDRY_API_KEY in "
-            "~/.hermes/.env or run 'hermes model' to configure. To use "
-            "keyless Microsoft Entra ID auth instead, set "
-            "model.auth_mode: entra_id in config.yaml (or pick "
-            "'Microsoft Entra ID' in 'hermes model')."
+            "Azure OpenAI / Foundry requires an API key. Set "
+            "AZURE_OPENAI_API_KEY or AZURE_FOUNDRY_API_KEY in "
+            f"{home_hint}/.env, or run 'hermes model'. To use keyless "
+            "Microsoft Entra ID auth instead, set model.auth_mode: entra_id "
+            "in config.yaml (or pick 'Microsoft Entra ID' in 'hermes model')."
         )
 
     source = "explicit" if (explicit_api_key or explicit_base_url) else "config"
-    return {
+    result = {
         "provider": "azure-foundry",
         "api_mode": cfg_api_mode,
         "base_url": base_url,
@@ -1595,6 +1706,9 @@ def _resolve_azure_foundry_runtime(
         "source": source,
         "requested_provider": requested_provider,
     }
+    if effective_model:
+        result["deployment"] = effective_model
+    return result
 
 
 def _resolve_explicit_runtime(

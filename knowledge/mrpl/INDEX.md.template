@@ -1,0 +1,9 @@
+# Knowledge catalog (template)
+
+When real documents exist, list them here for humans and agents.
+
+| ID | Title | Path | Type | Owner | Notes |
+|----|-------|------|------|-------|-------|
+| — | — | `sources/...` | sop/manual/... | — | — |
+
+Leave empty until content is available.

@@ -1,0 +1,37 @@
+# Suggested MRPL agent config overlay.
+# Copy selected keys into $HERMES_HOME/config.yaml manually.
+# This file is NOT auto-merged and must NOT contain secrets.
+# Keep your existing model: Azure or Houdry block when merging.
+
+approvals:
+  mode: smart # or manual for stricter human-in-the-loop
+
+memory:
+  memory_enabled: true
+  write_approval: true
+
+skills:
+  write_approval: true
+
+security:
+  redact_secrets: true
+
+# terminal:
+#   cwd: /absolute/path/to/knowledge/mrpl
+
+# Prefer `hermes tools` to disable unrelated toolsets (image_gen, spotify,
+# homeassistant, discord_admin) rather than deleting upstream code.
+# Example (illustrative — adjust per platform key your install uses):
+# platform_toolsets:
+#   cli:
+#     - file
+#     - skills
+#     - code_execution
+#     - terminal
+#     - vision
+#     - web
+#     - clarify
+#     - todo
+#     - memory
+#     - session_search
+#     - delegation

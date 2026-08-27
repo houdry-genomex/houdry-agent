@@ -68,3 +68,13 @@ name / `appId` should be Houdry Agent (`com.houdry.agent`) — see
 3. Desktop chat: simple prompt returns text.
 4. Tool task: model returns `tool_calls` (fabric routes away from tinyllama when tools are present).
 5. About / NOTICE still credit Nous Research Hermes Agent.
+
+## Azure OpenAI (dev) vs fabric
+
+For cloud GPT-5.6 Luna during development, use provider `azure` /
+`AZURE_OPENAI_*` — see [AZURE_OPENAI.md](AZURE_OPENAI.md). That path does
+**not** remove or replace this fabric integration; switch providers in
+`config.yaml` / `.env` only.
+
+MRPL agent layer (skills / knowledge / governance) is provider-independent:
+[mrpl/ARCHITECTURE.md](mrpl/ARCHITECTURE.md), [mrpl/RUNNING.md](mrpl/RUNNING.md).

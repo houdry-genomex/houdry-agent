@@ -75,7 +75,19 @@ npm run dev   # development
 #   npm run dist:linux | dist:mac | dist:win
 ```
 
-Smoke checklist + packaging outline: [docs/HOUDRY.md](docs/HOUDRY.md).
+See [docs/HOUDRY.md](docs/HOUDRY.md) for fabric wiring, data directories, and release notes.
+
+Azure OpenAI (dev GPT deployments) ↔ Houdry switch: [docs/AZURE_OPENAI.md](docs/AZURE_OPENAI.md).
+
+## MRPL layer (on top of Hermes)
+
+MRPL workflows are **skills + knowledge + governance**, not a core rewrite.
+Inference stays swappable (Azure for development, Houdry for private GPU).
+
+- Architecture: [docs/mrpl/ARCHITECTURE.md](docs/mrpl/ARCHITECTURE.md)
+- Run / switch providers: [docs/mrpl/RUNNING.md](docs/mrpl/RUNNING.md)
+- Skills: `skills/mrpl/`
+- Knowledge mount scaffold: `knowledge/mrpl/`
 
 ## License
 
