@@ -774,19 +774,30 @@ function resolveHermesHome() {
   }
 
   if (IS_WINDOWS && process.env.LOCALAPPDATA) {
-    const localappdata = path.join(process.env.LOCALAPPDATA, 'hermes')
-    const legacy = path.join(app.getPath('home'), '.hermes')
+    const localappdata = path.join(process.env.LOCALAPPDATA, 'houdry-agent')
+    const legacyHermesLocal = path.join(process.env.LOCALAPPDATA, 'hermes')
+    const legacyHermesHome = path.join(app.getPath('home'), '.hermes')
 
-    // Migrate transparently to LOCALAPPDATA, but honour an existing legacy
-    // ~/.hermes setup (no LOCALAPPDATA install yet) so users don't lose state.
-    if (!directoryExists(localappdata) && directoryExists(legacy)) {
-      return legacy
+    // Prefer Houdry Agent home; fall back to a legacy Hermes home once so
+    // migrations do not orphan sessions.
+    if (!directoryExists(localappdata) && directoryExists(legacyHermesLocal)) {
+      return legacyHermesLocal
+    }
+    if (!directoryExists(localappdata) && directoryExists(legacyHermesHome)) {
+      return legacyHermesHome
     }
 
     return localappdata
   }
 
-  return path.join(app.getPath('home'), '.hermes')
+  {
+    const houdryHome = path.join(app.getPath('home'), '.houdry-agent')
+    const legacyHermes = path.join(app.getPath('home'), '.hermes')
+    if (!directoryExists(houdryHome) && directoryExists(legacyHermes)) {
+      return legacyHermes
+    }
+    return houdryHome
+  }
 }
 
 const HERMES_HOME = resolveHermesHome()

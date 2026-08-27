@@ -51,12 +51,17 @@ def get_hermes_home_override() -> str | None:
 
 
 def _get_platform_default_hermes_home() -> Path:
-    """Return the platform-native default Hermes home path."""
+    """Return the platform-native default Houdry Agent home path.
+
+    Houdry Agent is a branded fork of Hermes Agent (Nous Research). State lives
+    under ``~/.houdry-agent`` / ``%LOCALAPPDATA%\\houdry-agent`` so it does not
+    collide with a stock Hermes install. ``HERMES_HOME`` still overrides.
+    """
     if sys.platform == "win32":
         local_appdata = os.environ.get("LOCALAPPDATA", "").strip()
         base = Path(local_appdata) if local_appdata else Path.home() / "AppData" / "Local"
-        return base / "hermes"
-    return Path.home() / ".hermes"
+        return base / "houdry-agent"
+    return Path.home() / ".houdry-agent"
 
 
 def _hermes_home_from_env() -> Path:

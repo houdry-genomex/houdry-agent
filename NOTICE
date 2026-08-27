@@ -1,0 +1,22 @@
+Houdry Agent
+============
+
+Houdry Agent is a branded distribution of Hermes Agent for use with the
+Houdry private GPU fabric (https://github.com/houdry-genomex/houdry).
+
+This software includes code from Hermes Agent by Nous Research:
+
+  Project:  https://github.com/NousResearch/hermes-agent
+  Website:  https://hermes-agent.nousresearch.com
+  License:  MIT (see LICENSE)
+  Copyright (c) 2025 Nous Research
+
+Houdry Agent modifications and packaging are Copyright (c) houdry-genomex
+contributors, also under the MIT License.
+
+Hermes Agent is open source and may be used by anyone under its MIT terms.
+Houdry Agent does not claim ownership of Hermes; we redistribute and adapt
+it with attribution as required by the license.
+
+Third-party dependencies retain their own licenses; see package metadata
+in this repository (Python, Node, and Electron components).

@@ -1,0 +1,15 @@
+# Default model config for Houdry Agent → Houdry fabric
+#
+# Copy into $HERMES_HOME/config.yaml (default: ~/.houdry-agent/config.yaml)
+# or merge the `model:` block into your existing config.
+#
+# Also set in $HERMES_HOME/.env:
+#   OPENAI_API_KEY=houdry
+
+model:
+  provider: custom
+  # Include /v1 — Houdry exposes OpenAI-compatible routes under that prefix.
+  base_url: "http://127.0.0.1:18080/v1"
+  # Houdry router picks a tool-capable model when tools are present.
+  default: "auto"
+  # api_key: "houdry"   # optional if set in .env as OPENAI_API_KEY
