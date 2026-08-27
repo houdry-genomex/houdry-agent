@@ -2897,6 +2897,9 @@ export const zh: Translations = {
     chooseLater: '稍后再选择提供方',
     recommended: '推荐',
     connected: '已连接',
+    houdryFabricTitle: 'Houdry server URL',
+    houdryFabricPitch:
+      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
     featuredPitch: '一个订阅，300+ 前沿模型 — 运行 Hermes 的推荐方式',
     fireworksPitch: '直接模型 API — Fireworks 托管的前沿模型',
     openRouterPitch: '一个密钥，数百个模型 — 稳妥的默认选择',
@@ -2913,6 +2916,7 @@ export const zh: Translations = {
     },
     backToSignIn: '返回登录',
     getKey: '获取密钥',
+    viewDocs: 'Docs',
     replaceCurrent: '替换当前值',
     pasteApiKey: '粘贴 API 密钥',
     localApiKeyPlaceholder: 'API 密钥（可选 — 仅当端点需要时填写）',

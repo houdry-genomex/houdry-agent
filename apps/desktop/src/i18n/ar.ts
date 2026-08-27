@@ -2111,6 +2111,9 @@ export const ar = defineLocale({
     chooseLater: 'سأختار مزوّدا لاحقا',
     recommended: 'موصى به',
     connected: 'متصل',
+    houdryFabricTitle: 'Houdry server URL',
+    houdryFabricPitch:
+      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
     featuredPitch: 'اشتراك واحد، أكثر من 300 نموذج متقدم — الطريقة الموصى بها لتشغيل Hermes',
     fireworksPitch: 'نماذج مفتوحة سريعة مع استضافة Fireworks.',
     openRouterPitch: 'مفتاح واحد لمئات النماذج — خيار افتراضي جيد',
@@ -2139,6 +2142,7 @@ export const ar = defineLocale({
     },
     backToSignIn: 'العودة إلى تسجيل الدخول',
     getKey: 'الحصول على مفتاح',
+    viewDocs: 'Docs',
     replaceCurrent: 'استبدال القيمة الحالية',
     pasteApiKey: 'ألصق مفتاح API',
     localApiKeyPlaceholder: 'مفتاح API (اختياري — فقط إذا كانت نقطة النهاية تتطلبه)',

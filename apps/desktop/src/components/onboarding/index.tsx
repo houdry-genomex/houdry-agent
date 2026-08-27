@@ -32,6 +32,7 @@ import { DocsLink, FlowPanel, Status } from './flow'
 import {
   FeaturedProviderRow,
   FireworksProviderRow,
+  HoudryFabricProviderRow,
   OpenRouterProviderRow,
   ProviderRow,
   sortProviders
@@ -40,6 +41,7 @@ import {
 export {
   FeaturedProviderRow,
   FireworksProviderRow,
+  HoudryFabricProviderRow,
   KeyProviderRow,
   OpenRouterProviderRow,
   ProviderRow,
@@ -64,9 +66,15 @@ export interface ApiKeyOption {
   short?: string
 }
 
-// Curated order mirrors CANONICAL_PROVIDERS: Fireworks sits #2 overall (after
-// Nous Portal OAuth), ahead of OpenRouter and the rest of the key catalog.
+// Curated order: Houdry fabric URL first (recommended), then Fireworks / OpenRouter / etc.
 const API_KEY_OPTIONS: ApiKeyOption[] = [
+  {
+    id: 'local',
+    name: 'Houdry server URL',
+    envKey: 'OPENAI_BASE_URL',
+    docsUrl: 'https://github.com/houdry-genomex/houdry-agent/blob/main/docs/HOUDRY.md',
+    placeholder: 'http://127.0.0.1:18080/v1'
+  },
   {
     id: 'fireworks',
     name: 'Fireworks AI',
@@ -96,13 +104,6 @@ const API_KEY_OPTIONS: ApiKeyOption[] = [
     name: 'xAI Grok',
     envKey: 'XAI_API_KEY',
     docsUrl: 'https://console.x.ai/'
-  },
-  {
-    id: 'local',
-    name: 'Local / custom endpoint',
-    envKey: 'OPENAI_BASE_URL',
-    docsUrl: 'https://github.com/NousResearch/hermes-agent#bring-your-own-endpoint',
-    placeholder: 'http://127.0.0.1:8000/v1'
   }
 ]
 
@@ -481,6 +482,7 @@ export function Picker({ ctx }: { ctx: OnboardingContext }) {
   return (
     <div className="grid gap-2">
       <div className="grid max-h-[60dvh] gap-2 overflow-y-auto p-1">
+        <HoudryFabricProviderRow onClick={() => openKeyForm('OPENAI_BASE_URL')} />
         {featured ? <FeaturedProviderRow onSelect={select} provider={featured} /> : null}
         {showRest ? (
           <>
@@ -562,7 +564,10 @@ export function ApiKeyForm({
 
   const [option, setOption] = useState<ApiKeyOption>(() => options.find(o => o.envKey === initialEnvKey) ?? options[0])
 
-  const [value, setValue] = useState('')
+  const [value, setValue] = useState(() => {
+    const initial = options.find(o => o.envKey === initialEnvKey) ?? options[0]
+    return initial?.envKey === 'OPENAI_BASE_URL' ? (initial.placeholder ?? 'http://127.0.0.1:18080/v1') : ''
+  })
   // Optional endpoint API key, only used by the local / custom endpoint option
   // (whose `value` is the base URL). Cleared whenever the option changes.
   const [localKey, setLocalKey] = useState('')
@@ -574,7 +579,7 @@ export function ApiKeyForm({
   useEffect(() => {
     if (options.length > 0 && !options.some(o => o.envKey === option.envKey)) {
       setOption(options[0])
-      setValue('')
+      setValue(options[0].envKey === 'OPENAI_BASE_URL' ? (options[0].placeholder ?? '') : '')
       setLocalKey('')
       setError(null)
     }
@@ -586,7 +591,7 @@ export function ApiKeyForm({
 
   const pick = (o: ApiKeyOption) => {
     setOption(o)
-    setValue('')
+    setValue(o.envKey === 'OPENAI_BASE_URL' ? (o.placeholder ?? 'http://127.0.0.1:18080/v1') : '')
     setLocalKey('')
     setError(null)
     requestAnimationFrame(() => {
@@ -659,7 +664,9 @@ export function ApiKeyForm({
       <div className="grid scroll-mt-4 gap-2" ref={entryRef}>
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm leading-6 text-muted-foreground">{optionDescription}</p>
-          {option.docsUrl ? <DocsLink href={option.docsUrl}>{t.onboarding.getKey}</DocsLink> : null}
+          {option.docsUrl ? (
+            <DocsLink href={option.docsUrl}>{isLocal ? t.onboarding.viewDocs : t.onboarding.getKey}</DocsLink>
+          ) : null}
         </div>
         <Input
           autoComplete="off"

@@ -2367,6 +2367,9 @@ export const ja = defineLocale({
     chooseLater: '後でプロバイダーを選択します',
     recommended: '推奨',
     connected: '接続済み',
+    houdryFabricTitle: 'Houdry server URL',
+    houdryFabricPitch:
+      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
     featuredPitch: '1 つのサブスクリプションで 300 以上の最先端モデル — Hermes を実行するための推奨方法',
     fireworksPitch: '直接モデル API — Fireworks がホストする最先端モデル',
     openRouterPitch: '1 つのキーで数百のモデル — 堅実なデフォルト',
@@ -2390,6 +2393,7 @@ export const ja = defineLocale({
     },
     backToSignIn: 'サインインに戻る',
     getKey: 'キーを取得',
+    viewDocs: 'Docs',
     replaceCurrent: '現在の値を置き換え',
     pasteApiKey: 'API キーを貼り付け',
     couldNotSave: '認証情報を保存できませんでした。',

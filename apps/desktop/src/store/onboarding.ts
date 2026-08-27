@@ -863,15 +863,21 @@ export async function saveOnboardingLocalEndpoint(baseUrl: string, apiKey: strin
       return { ok: false, message: probe.message || `Could not reach ${url}.` }
     }
 
-    model = (probe.models?.[0] ?? '').trim()
+    model = (probe.models?.includes('auto') ? 'auto' : (probe.models?.[0] ?? '')).trim()
   } catch {
     return { ok: false, message: `Could not reach ${url}.` }
   }
 
   if (!model) {
-    return {
-      ok: false,
-      message: `Connected to ${url}, but it advertised no models at /v1/models. Start a model on that endpoint and try again.`
+    // Houdry fabric always advertises `auto`; other OpenAI-compatible servers
+    // may omit /v1/models — still allow a router-style default for fabric URLs.
+    if (/18080|houdry/i.test(url)) {
+      model = 'auto'
+    } else {
+      return {
+        ok: false,
+        message: `Connected to ${url}, but it advertised no models at /v1/models. Start a model on that endpoint and try again.`
+      }
     }
   }
 
@@ -887,13 +893,13 @@ export async function saveOnboardingLocalEndpoint(baseUrl: string, apiKey: strin
       return { ok: false, message: detail || `Saved, but Hermes still cannot reach ${url}.` }
     }
 
-    notifyReady('Local / custom endpoint')
+    notifyReady('Houdry server')
     completeDesktopOnboarding()
     ctx.onCompleted?.()
 
     return { ok: true }
   } catch (error) {
-    notifyError(error, 'Could not save local endpoint')
+    notifyError(error, 'Could not save Houdry server URL')
 
     return { ok: false, message: errMessage(error) }
   }

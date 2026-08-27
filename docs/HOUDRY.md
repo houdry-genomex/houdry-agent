@@ -22,6 +22,16 @@ Use OpenAI-compatible custom provider against the fabric:
 | `model.default` | `auto` (Houdry router) |
 | API key | any non-empty string if required (e.g. `houdry`) |
 
+**Desktop first-run / Settings:** choose **Houdry server URL** (recommended),
+enter the fabric base URL (prefilled `http://127.0.0.1:18080/v1`), optional key
+`houdry`. That maps to `model.base_url` + `provider: custom` + model `auto`.
+
+CLI seed (same defaults without the UI):
+
+```bash
+./scripts/seed-houdry-fabric-config.sh
+```
+
 Template: [../config/houdry-fabric.defaults.yaml](../config/houdry-fabric.defaults.yaml)
 
 ## Data directory

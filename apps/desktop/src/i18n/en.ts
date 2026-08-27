@@ -1129,8 +1129,9 @@ export const en: Translations = {
       searchKeys: 'Search providers…',
       noKeysMatch: 'No providers match your search.',
       localEndpoint: {
-        title: 'Local / custom endpoint',
-        description: 'Point Hermes at any OpenAI-compatible endpoint (Zyphra, vLLM, llama.cpp, Ollama, etc).'
+        title: 'Houdry server URL',
+        description:
+          'Point Houdry Agent at your fabric OpenAI-compatible endpoint (http://<host>:18080/v1). Also works with other OpenAI-compatible servers.'
       },
       loading: 'Loading providers...'
     },
@@ -2714,10 +2715,10 @@ export const en: Translations = {
   },
 
   onboarding: {
-    headerTitle: "Let's get you setup with Hermes Agent",
-    headerDesc: 'Connect a model provider to start chatting. Most options take one click.',
-    preparingInstall: 'Hermes is finishing install. This usually takes under a minute on first run.',
-    starting: 'Starting Hermes…',
+    headerTitle: "Let's get you set up with Houdry Agent",
+    headerDesc: 'Connect to a Houdry fabric server (or another provider) to start chatting.',
+    preparingInstall: 'Houdry Agent is finishing install. This usually takes under a minute on first run.',
+    starting: 'Starting Houdry Agent…',
     lookingUpProviders: 'Looking up providers...',
     collapse: 'Collapse',
     otherProviders: 'Other providers',
@@ -2725,7 +2726,10 @@ export const en: Translations = {
     chooseLater: "I'll choose a provider later",
     recommended: 'Recommended',
     connected: 'Connected',
-    featuredPitch: 'One subscription, 300+ frontier models — the recommended way to run Hermes',
+    houdryFabricTitle: 'Houdry server URL',
+    houdryFabricPitch:
+      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
+    featuredPitch: 'One subscription, 300+ frontier models — optional cloud path via Hermes / Nous',
     fireworksPitch: 'Direct model API — Fireworks-hosted frontier models',
     openRouterPitch: 'One key, hundreds of models — a solid default',
     apiKeyOptions: {
@@ -2741,15 +2745,17 @@ export const en: Translations = {
       gemini: { short: 'Gemini models', description: 'Direct access to Google Gemini models.' },
       xai: { short: 'Grok models', description: 'Direct access to xAI Grok models.' },
       local: {
-        short: 'self-hosted',
-        description: 'Point Hermes at a local or self-hosted OpenAI-compatible endpoint (vLLM, llama.cpp, Ollama, etc).'
+        short: 'fabric /v1',
+        description:
+          'Houdry fabric URL (include /v1). Default localhost is http://127.0.0.1:18080/v1. Use model auto for the fabric router.'
       }
     },
     backToSignIn: 'Back to sign in',
     getKey: 'Get a key',
+    viewDocs: 'Docs',
     replaceCurrent: 'Replace current value',
     pasteApiKey: 'Paste API key',
-    localApiKeyPlaceholder: 'API key (optional — only if your endpoint requires one)',
+    localApiKeyPlaceholder: 'API key (optional — use houdry if the fabric has no token)',
     couldNotSave: 'Could not save credential.',
     connecting: 'Connecting',
     update: 'Update',

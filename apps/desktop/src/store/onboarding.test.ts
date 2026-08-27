@@ -522,6 +522,36 @@ describe('saveOnboardingLocalEndpoint', () => {
     expect(calls).not.toContain('/api/model/set')
   })
 
+  it('prefers model=auto when the endpoint advertises it (Houdry fabric)', async () => {
+    const calls: { body?: unknown; path: string }[] = []
+
+    installApiMock(async ({ body, path }: { body?: unknown; path: string }) => {
+      calls.push({ body, path })
+
+      if (path === '/api/providers/validate') {
+        return { ok: true, reachable: true, message: '', models: ['auto', 'tinyllama'] }
+      }
+
+      if (path === '/api/model/set') {
+        return { ok: true, provider: 'custom', model: 'auto', base_url: 'http://127.0.0.1:18080/v1' }
+      }
+
+      throw new Error(`unexpected api path: ${path}`)
+    })
+
+    const result = await saveOnboardingLocalEndpoint('http://127.0.0.1:18080/v1', 'houdry', {
+      requestGateway: readyGateway()
+    })
+
+    expect(result.ok).toBe(true)
+    expect(calls.find(c => c.path === '/api/model/set')?.body).toMatchObject({
+      provider: 'custom',
+      model: 'auto',
+      base_url: 'http://127.0.0.1:18080/v1',
+      api_key: 'houdry'
+    })
+  })
+
   it('auto-discovers the model and persists provider=custom + base_url, then finishes', async () => {
     const calls: { body?: unknown; path: string }[] = []
 

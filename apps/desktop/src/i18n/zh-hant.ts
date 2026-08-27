@@ -2287,6 +2287,9 @@ export const zhHant = defineLocale({
     chooseLater: '稍後再選擇提供方',
     recommended: '建議',
     connected: '已連線',
+    houdryFabricTitle: 'Houdry server URL',
+    houdryFabricPitch:
+      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
     featuredPitch: '一個訂閱，300+ 前沿模型 — 執行 Hermes 的建議方式',
     fireworksPitch: '直接模型 API — Fireworks 託管的前沿模型',
     openRouterPitch: '一個金鑰，數百個模型 — 穩定的預設選擇',
@@ -2303,6 +2306,7 @@ export const zhHant = defineLocale({
     },
     backToSignIn: '返回登入',
     getKey: '取得金鑰',
+    viewDocs: 'Docs',
     replaceCurrent: '取代目前值',
     pasteApiKey: '貼上 API 金鑰',
     couldNotSave: '無法儲存憑證。',
