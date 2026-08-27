@@ -9,6 +9,7 @@ import type {
 } from '@/types/hermes'
 
 import { capabilityScoped, hermesApi, type ProfileScope, profileScoped, STARTUP_REQUEST_TIMEOUT_MS } from './client'
+import { scopeHoudryDesktopModelCatalog } from '@/lib/houdry-inference-providers'
 
 export function getGlobalModelInfo(profile?: null | string): Promise<ModelInfoResponse> {
   return hermesApi<ModelInfoResponse>({
@@ -51,7 +52,7 @@ export function getGlobalModelOptions(
     ...profileScoped(profile),
     path: params.size > 0 ? `/api/model/options?${params.toString()}` : '/api/model/options',
     timeoutMs: STARTUP_REQUEST_TIMEOUT_MS
-  })
+  }).then(scopeHoudryDesktopModelCatalog)
 }
 
 export interface RecommendedDefaultModel {

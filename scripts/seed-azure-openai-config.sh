@@ -32,5 +32,6 @@ _add_if_missing "AZURE_OPENAI_DEPLOYMENT" "gpt-5.6-luna"
 
 echo "Edit $ENV_FILE with your Azure credentials, then:"
 echo "  hermes chat -q 'ping' "
-echo "Or Desktop: Settings → model provider Azure / azure-foundry."
+echo "Or Desktop: Settings → Providers → API Keys → Azure OpenAI."
+echo "Windows (no bash): py -3 scripts/seed_mrpl_desktop_home.py"
 echo "Houdry fabric remains available via scripts/seed-houdry-fabric-config.sh"

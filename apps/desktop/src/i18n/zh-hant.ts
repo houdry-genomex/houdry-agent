@@ -266,8 +266,8 @@ export const zhHant = defineLocale({
     nav: {
       providers: '提供方',
       providerAccounts: '帳號',
-      providerApiKeys: 'API 金鑰',
-      providerCustomEndpoints: '自訂端點',
+      providerApiKeys: 'Azure OpenAI',
+      providerCustomEndpoints: 'Houdry GPU fabric',
       gateway: '閘道',
       apiKeys: '工具與金鑰',
       keybinds: '鍵盤快捷鍵',
@@ -2289,7 +2289,10 @@ export const zhHant = defineLocale({
     connected: '已連線',
     houdryFabricTitle: 'Houdry server URL',
     houdryFabricPitch:
-      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
+      'PROD — point at your fabric control plane, http://<host>:18080/v1',
+    azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
+    azureOpenAiPitch:
+      'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → API Keys',
     featuredPitch: '一個訂閱，300+ 前沿模型 — 執行 Hermes 的建議方式',
     fireworksPitch: '直接模型 API — Fireworks 託管的前沿模型',
     openRouterPitch: '一個金鑰，數百個模型 — 穩定的預設選擇',

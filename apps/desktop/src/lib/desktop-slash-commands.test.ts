@@ -31,7 +31,13 @@ describe('desktop slash command curation', () => {
   it('surfaces skill and quick commands (extensions) in suggestions and lets them run', () => {
     expect(isDesktopSlashSuggestion('/my-skill')).toBe(true)
     expect(isDesktopSlashSuggestion('/gif-search')).toBe(true)
+    expect(isDesktopSlashSuggestion('/document-analysis')).toBe(true)
+    expect(isDesktopSlashSuggestion('/procedure-lookup')).toBe(true)
+    expect(isDesktopSlashSuggestion('/engineering-calculation')).toBe(true)
+    expect(isDesktopSlashSuggestion('/report-generation')).toBe(true)
+    expect(isDesktopSlashSuggestion('/knowledge-search')).toBe(true)
     expect(isDesktopSlashCommand('/my-skill')).toBe(true)
+    expect(isDesktopSlashCommand('/document-analysis')).toBe(true)
   })
 
   it('hides terminal, messaging, and dedicated-UI commands from suggestions', () => {
@@ -355,6 +361,26 @@ describe('rankSkillCommands', () => {
 
   it('leaves the backend order untouched when the catalog carries no usage', () => {
     expect(rankSkillCommands(rows, undefined, { pruneUnusedBuiltins: true })).toEqual(rows)
+  })
+
+  it('keeps unused bundled MRPL skills visible when browsing, ahead of other unused built-ins', () => {
+    const rows = [
+      { text: '/manim-video' },
+      { text: '/document-analysis' },
+      { text: '/work' },
+      { text: '/knowledge-search' }
+    ]
+    const skills = {
+      '/manim-video': { usage: 0, origin: 'bundled' as const },
+      '/document-analysis': { usage: 0, origin: 'bundled' as const },
+      '/work': { usage: 12, origin: 'local' as const },
+      '/knowledge-search': { usage: 0, origin: 'bundled' as const }
+    }
+
+    const browsing = rankSkillCommands(rows, skills, { pruneUnusedBuiltins: true }).map(row => row.text)
+
+    expect(browsing).toEqual(['/document-analysis', '/knowledge-search', '/work'])
+    expect(browsing).not.toContain('/manim-video')
   })
 
   it('ranks an alias by the canonical command it resolves to', () => {

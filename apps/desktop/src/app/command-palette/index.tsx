@@ -399,8 +399,8 @@ type NonConfigSettingsLabel =
   | 'keysTools'
   | 'mcp'
   | 'plugins'
-  | 'providerAccounts'
   | 'providerApiKeys'
+  | 'providerCustomEndpoints'
 
 const NON_CONFIG_SETTINGS: ReadonlyArray<{
   icon: IconComponent
@@ -409,16 +409,16 @@ const NON_CONFIG_SETTINGS: ReadonlyArray<{
   tab: string
 }> = [
   {
-    icon: Zap,
-    keywords: ['accounts', 'sign in', 'oauth', 'login', 'subscription', 'models', 'anthropic', 'openai'],
-    labelKey: 'providerAccounts',
-    tab: 'providers&pview=accounts'
-  },
-  {
     icon: KeyRound,
-    keywords: ['providers', 'api key', 'keys', 'secrets', 'tokens', 'egress', 'iron proxy', 'sandbox proxy'],
+    keywords: ['providers', 'azure', 'openai', 'api key', 'luna', 'endpoint', 'deployment'],
     labelKey: 'providerApiKeys',
     tab: 'providers&pview=keys'
+  },
+  {
+    icon: Globe,
+    keywords: ['houdry', 'fabric', 'gpu', 'custom endpoint', 'local', 'openai-compatible'],
+    labelKey: 'providerCustomEndpoints',
+    tab: 'providers&pview=custom-endpoints'
   },
   {
     icon: Globe,

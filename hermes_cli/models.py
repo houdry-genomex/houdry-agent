@@ -684,9 +684,11 @@ _PROVIDER_MODELS: dict[str, list[str]] = {
         "us.meta.llama4-maverick-17b-instruct-v1:0",
         "us.meta.llama4-scout-17b-instruct-v1:0",
     ],
-    # Azure Foundry: user-provided endpoint and model.
-    # Empty list because models depend on the endpoint configuration.
-    "azure-foundry": [],
+    # Azure Foundry: user-provided endpoint and model. Seed the DEV
+    # deployment so the picker is never only a leftover Claude/OpenCode id.
+    "azure-foundry": [
+        "gpt-5.6-luna",
+    ],
     # Google Vertex AI — static curated list.  Vertex's OpenAI-compatible
     # endpoint has no /models listing route, so without this entry the
     # /model picker only ever shows the currently-configured model.

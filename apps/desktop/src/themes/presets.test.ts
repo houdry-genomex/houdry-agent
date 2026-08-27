@@ -39,6 +39,13 @@ describe('theme typography emoji fallback (#40364)', () => {
   })
 })
 
+describe('default UI typography', () => {
+  it('prefers Inter for chrome and chat, keeping emoji fallback', () => {
+    expect(DEFAULT_TYPOGRAPHY.fontSans.startsWith('Inter,')).toBe(true)
+    expect(DEFAULT_TYPOGRAPHY.fontUrl).toMatch(/family=Inter/)
+  })
+})
+
 // The pre-GitHub Nous palette stays available as nous-alt; the default name
 // still means GitHub chrome + brand blue.
 describe('nous-alt is the retired Nous, not the default', () => {

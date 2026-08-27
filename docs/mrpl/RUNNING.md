@@ -1,5 +1,17 @@
 # Running the MRPL agent
 
+## Desktop (Windows)
+
+See [DESKTOP.md](DESKTOP.md) for branding, Azure-first Settings, slash skills,
+and `%LOCALAPPDATA%\houdry-agent`.
+
+```powershell
+$env:HERMES_HOME = "$env:LOCALAPPDATA\houdry-agent"
+py -3 scripts\seed_mrpl_desktop_home.py
+cd apps\desktop
+npm run dev
+```
+
 ## Prerequisites
 
 ```bash

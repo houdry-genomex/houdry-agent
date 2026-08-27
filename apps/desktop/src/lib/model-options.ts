@@ -1,4 +1,10 @@
 import { getGlobalModelOptions, type HermesGateway, type ModelOptionsResponse } from '@/hermes'
+import {
+  HOUDRY_AZURE_DEFAULT_MODEL,
+  isAzureInferenceSlug,
+  isWeakAzureDefaultModel,
+  scopeHoudryDesktopModelCatalog
+} from '@/lib/houdry-inference-providers'
 import type { ModelOptionProvider } from '@/types/hermes'
 
 /**
@@ -59,11 +65,17 @@ export function firstSelectableCatalogModel(
       continue
     }
 
-    const model = provider.models?.[0]
+    const models = provider.models ?? []
 
-    if (model) {
-      return { model, provider: provider.slug }
+    if (models.length === 0) {
+      continue
     }
+
+    if (isAzureInferenceSlug(provider.slug) && models.includes(HOUDRY_AZURE_DEFAULT_MODEL)) {
+      return { model: HOUDRY_AZURE_DEFAULT_MODEL, provider: provider.slug }
+    }
+
+    return { model: models[0], provider: provider.slug }
   }
 
   return null
@@ -83,6 +95,10 @@ export function reconcileSelectionAfterCatalogRefresh(
 
   if (!next) {
     return null
+  }
+
+  if (isWeakAzureDefaultModel(currentModel) && next.model === HOUDRY_AZURE_DEFAULT_MODEL) {
+    return next
   }
 
   if (selectionInCatalog(providers, currentModel)) {
@@ -164,8 +180,10 @@ export async function requestModelOptions({
       gatewayError = error
     }
 
-    if (gatewayOptions && hasSelectableModels(gatewayOptions)) {
-      return gatewayOptions
+    const scopedGateway = gatewayOptions ? scopeHoudryDesktopModelCatalog(gatewayOptions) : undefined
+
+    if (scopedGateway && hasSelectableModels(scopedGateway)) {
+      return scopedGateway
     }
 
     // A connected Desktop gateway can occasionally return only the current
@@ -174,10 +192,11 @@ export async function requestModelOptions({
     // endpoint Settings uses, but keep the live session selection authoritative.
     try {
       const restOptions = await restModelOptions(explicitOnly, refresh, profile)
+      const scopedRest = scopeHoudryDesktopModelCatalog(restOptions)
 
-      if (hasSelectableModels(restOptions)) {
+      if (hasSelectableModels(scopedRest)) {
         return {
-          ...restOptions,
+          ...scopedRest,
           ...(gatewayOptions?.provider ? { provider: gatewayOptions.provider } : {}),
           ...(gatewayOptions?.model ? { model: gatewayOptions.model } : {})
         }
@@ -187,12 +206,12 @@ export async function requestModelOptions({
       // path is unavailable.
     }
 
-    if (gatewayOptions) {
-      return gatewayOptions
+    if (scopedGateway) {
+      return scopedGateway
     }
 
     throw gatewayError
   }
 
-  return restModelOptions(explicitOnly, refresh, profile)
+  return scopeHoudryDesktopModelCatalog(await restModelOptions(explicitOnly, refresh, profile))
 }

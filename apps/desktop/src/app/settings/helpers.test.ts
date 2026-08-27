@@ -160,22 +160,17 @@ describe('settings helpers', () => {
 
   describe('providerGroup', () => {
     it('maps a provider env var to its labeled group', () => {
-      expect(providerGroup('XAI_API_KEY')).toBe('xAI')
-      expect(providerGroup('NOUS_API_KEY')).toBe('Nous Portal')
-      expect(providerGroup('FIREWORKS_API_KEY')).toBe('Fireworks AI')
-      expect(providerGroup('OPENROUTER_API_KEY')).toBe('OpenRouter')
+      expect(providerGroup('AZURE_OPENAI_API_KEY')).toBe('Azure OpenAI')
+      expect(providerGroup('AZURE_OPENAI_ENDPOINT')).toBe('Azure OpenAI')
+      expect(providerGroup('AZURE_OPENAI_DEPLOYMENT')).toBe('Azure OpenAI')
+      expect(providerGroup('AZURE_FOUNDRY_API_KEY')).toBe('Azure OpenAI')
     })
 
-    it('prefers the longest matching prefix so CN/regional buckets win', () => {
-      // MINIMAX_CN_ must beat the generic MINIMAX_ prefix.
-      expect(providerGroup('MINIMAX_CN_API_KEY')).toBe('MiniMax (China)')
-      expect(providerGroup('MINIMAX_API_KEY')).toBe('MiniMax')
-      // KIMI_CN_ likewise must beat KIMI_.
-      expect(providerGroup('KIMI_CN_API_KEY')).toBe('Kimi (China)')
-      expect(providerGroup('KIMI_API_KEY')).toBe('Kimi / Moonshot')
-      // HERMES_QWEN_ shares the HERMES_ stem with other integrations.
-      expect(providerGroup('HERMES_QWEN_BASE_URL')).toBe('DashScope (Qwen)')
-      expect(providerGroup('GEMINI_API_KEY')).toBe('Gemini')
+    it('does not label third-party Hermes vendors (Desktop only lists Azure)', () => {
+      expect(providerGroup('MINIMAX_API_KEY')).toBe('Other')
+      expect(providerGroup('ANTHROPIC_API_KEY')).toBe('Other')
+      expect(providerGroup('OPENROUTER_API_KEY')).toBe('Other')
+      expect(providerGroup('GEMINI_API_KEY')).toBe('Other')
     })
 
     it('falls back to "Other" for un-grouped env vars', () => {

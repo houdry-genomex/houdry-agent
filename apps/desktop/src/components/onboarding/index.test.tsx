@@ -1,11 +1,20 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
+import { I18nProvider } from '@/i18n'
 import { $desktopOnboarding, type DesktopOnboardingState, type OnboardingContext } from '@/store/onboarding'
 import { makeOAuthProvider } from '@/test/oauth-provider'
 import type { OAuthProvider } from '@/types/hermes'
 
 import { Picker } from '.'
+
+function renderPicker(ctx: OnboardingContext) {
+  return render(
+    <I18nProvider configClient={null} initialLocale="en">
+      <Picker ctx={ctx} />
+    </I18nProvider>
+  )
+}
 
 function setProviders(providers: OAuthProvider[]) {
   $desktopOnboarding.set({
@@ -46,62 +55,37 @@ afterEach(() => {
 })
 
 describe('onboarding Picker', () => {
-  it('features Nous Portal and hides other providers behind a disclosure', () => {
+  it('shows only Azure OpenAI and Houdry fabric', () => {
     setProviders([makeOAuthProvider('anthropic', 'Anthropic Claude'), makeOAuthProvider('nous', 'Nous Portal')])
-    render(<Picker ctx={ctx} />)
+    renderPicker(ctx)
 
-    expect(screen.getByText('Nous Portal')).toBeTruthy()
-    expect(screen.getByText('Recommended')).toBeTruthy()
-    // Fireworks stays behind the disclosure with the other alternatives; only
-    // Nous Portal is visible before the user expands the list.
+    expect(screen.getByText('Azure OpenAI (GPT-5.6 Luna)')).toBeTruthy()
+    expect(screen.getByText('Houdry server URL')).toBeTruthy()
+    expect(screen.getAllByText('Recommended').length).toBe(2)
+    expect(screen.queryByText('Nous Portal')).toBeNull()
     expect(screen.queryByText('Fireworks AI')).toBeNull()
     expect(screen.queryByText('Anthropic API Key')).toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
-
-    expect(screen.getByText('Fireworks AI')).toBeTruthy()
-    expect(screen.getByText('Anthropic API Key')).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Collapse' })).toBeTruthy()
+    expect(screen.queryByText('Other providers')).toBeNull()
   })
 
-  it('shows Fireworks first in the expanded list, ahead of other OAuth providers', () => {
-    setProviders([
-      makeOAuthProvider('openai-codex', 'OpenAI Codex / ChatGPT'),
-      makeOAuthProvider('minimax-oauth', 'MiniMax'),
-      makeOAuthProvider('nous', 'Nous Portal')
-    ])
-    render(<Picker ctx={ctx} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Other providers' }))
-
-    const labels = screen
-      .getAllByRole('button')
-      .map(el => el.textContent ?? '')
-      .filter(text => /Nous Portal|Fireworks AI|ChatGPT or Codex|MiniMax|OpenRouter/.test(text))
-
-    const indexOf = (needle: string) => labels.findIndex(text => text.includes(needle))
-    expect(indexOf('Nous Portal')).toBeGreaterThanOrEqual(0)
-    expect(indexOf('Fireworks AI')).toBeGreaterThan(indexOf('Nous Portal'))
-    expect(indexOf('ChatGPT or Codex')).toBeGreaterThan(indexOf('Fireworks AI'))
-    expect(indexOf('MiniMax')).toBeGreaterThan(indexOf('ChatGPT or Codex'))
-  })
-
-  it('shows every provider directly when Nous Portal is absent', () => {
+  it('does not surface OAuth vendors when Nous Portal is absent', () => {
     setProviders([
       makeOAuthProvider('anthropic', 'Anthropic Claude'),
       makeOAuthProvider('openai-codex', 'OpenAI Codex / ChatGPT')
     ])
-    render(<Picker ctx={ctx} />)
+    renderPicker(ctx)
 
-    expect(screen.getByText('Fireworks AI')).toBeTruthy()
-    expect(screen.getByText('Anthropic API Key')).toBeTruthy()
-    expect(screen.getByText('ChatGPT or Codex Subscription')).toBeTruthy()
+    expect(screen.getByText('Azure OpenAI (GPT-5.6 Luna)')).toBeTruthy()
+    expect(screen.getByText('Houdry server URL')).toBeTruthy()
+    expect(screen.queryByText('Fireworks AI')).toBeNull()
+    expect(screen.queryByText('Anthropic API Key')).toBeNull()
+    expect(screen.queryByText('ChatGPT or Codex Subscription')).toBeNull()
     expect(screen.queryByText('Other sign-in options')).toBeNull()
-    expect(screen.queryByText('Recommended')).toBeNull()
   })
 
   it('offers "choose later" on first run and persists the skip', () => {
     setProviders([makeOAuthProvider('nous', 'Nous Portal')])
-    render(<Picker ctx={ctx} />)
+    renderPicker(ctx)
 
     const skip = screen.getByRole('button', { name: "I'll choose a provider later" })
 
@@ -114,7 +98,7 @@ describe('onboarding Picker', () => {
   it('hides "choose later" in manual (add-provider) mode', () => {
     setProviders([makeOAuthProvider('nous', 'Nous Portal')])
     $desktopOnboarding.set({ ...$desktopOnboarding.get(), manual: true })
-    render(<Picker ctx={ctx} />)
+    renderPicker(ctx)
 
     expect(screen.queryByRole('button', { name: "I'll choose a provider later" })).toBeNull()
   })

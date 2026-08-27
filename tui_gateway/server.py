@@ -8310,6 +8310,19 @@ def _make_agent(
             if not resolution.selected_model:
                 raise RuntimeError("Auth fallback resolved without a model")
             model = resolution.selected_model
+    if str(runtime.get("provider") or "").lower() == "azure-foundry":
+        runtime_model = str(runtime.get("model") or "").strip()
+        if runtime_model:
+            model = runtime_model
+        else:
+            try:
+                from hermes_cli.azure_openai_env import coerce_azure_openai_model
+
+                model = coerce_azure_openai_model(
+                    model, api_mode=str(runtime.get("api_mode") or "")
+                )
+            except Exception:
+                pass
     _pr = _load_provider_routing()
     return AIAgent(
         model=model,

@@ -69,7 +69,7 @@ export const en: Translations = {
     desktopBootFailedWithMessage: message => `Desktop boot failed: ${message}`,
     steps: {
       connectingGateway: 'Connecting live desktop gateway',
-      loadingSettings: 'Loading Hermes settings',
+      loadingSettings: 'Loading Houdry settings',
       loadingSessions: 'Loading recent sessions',
       retryingRemoteBackend: 'Reconnecting to the remote Hermes backend…',
       startingDesktopConnection: 'Starting desktop connection',
@@ -87,7 +87,7 @@ export const en: Translations = {
       ipcBridgeUnavailable: 'Desktop IPC bridge is unavailable.'
     },
     failure: {
-      title: "Hermes couldn't start",
+      title: "Houdry Agent couldn't start",
       description:
         "The background gateway didn't come up. Try one of the recovery steps below. Nothing here deletes your chats or settings.",
       remoteTitle: 'Remote gateway sign-in required',
@@ -392,8 +392,8 @@ export const en: Translations = {
     nav: {
       providers: 'Providers',
       providerAccounts: 'Accounts',
-      providerApiKeys: 'API keys',
-      providerCustomEndpoints: 'Custom Endpoints',
+      providerApiKeys: 'Azure OpenAI',
+      providerCustomEndpoints: 'Houdry GPU fabric',
       gateway: 'Gateways',
       apiKeys: 'Tools & Keys',
       keybinds: 'Keyboard Shortcuts',
@@ -1109,7 +1109,7 @@ export const en: Translations = {
       connectAccount: 'Connect an account',
       haveApiKey: 'Have an API key instead?',
       intro:
-        'Sign in with a subscription — no API key to copy. Hermes runs the browser sign-in for you, right here in the app.',
+        'Two inference paths: Azure OpenAI (GPT-5.6 Luna) for DEV, or Houdry GPU fabric for PROD.',
       connected: 'Connected',
       collapse: 'Collapse',
       connectAnother: 'Connect another provider',
@@ -1131,7 +1131,7 @@ export const en: Translations = {
       localEndpoint: {
         title: 'Houdry server URL',
         description:
-          'Point Houdry Agent at your fabric OpenAI-compatible endpoint (http://<host>:18080/v1). Also works with other OpenAI-compatible servers.'
+          'PROD — point at your fabric control plane (http://<host>:18080/v1).'
       },
       loading: 'Loading providers...'
     },
@@ -1371,7 +1371,7 @@ export const en: Translations = {
     loadFailed: 'Could not load memory graph',
     loading: 'Loading…',
     emptyTitle: 'Nothing learned yet',
-    emptyDesc: 'As Hermes builds skills and memories for your work, they appear here.',
+    emptyDesc: 'As Houdry Agent builds skills and memories for your work, they appear here.',
     share: 'Share map',
     shareHint:
       'Copy the code to share this map, or paste one to load. It only includes the layout, not your memory or skill text.',
@@ -1505,7 +1505,7 @@ export const en: Translations = {
     },
     nav: {
       newChat: { title: 'New session', detail: 'Start a fresh session' },
-      settings: { title: 'Settings', detail: 'Configure Hermes desktop' },
+      settings: { title: 'Settings', detail: 'Configure Houdry Agent' },
       skills: { title: 'Capabilities', detail: 'Skills, tools, and MCP servers' },
       messaging: { title: 'Messaging', detail: 'Set up Telegram, Slack, Discord, and more' },
       artifacts: { title: 'Artifacts', detail: 'Browse generated outputs' }
@@ -2325,16 +2325,16 @@ export const en: Translations = {
   composer: {
     message: 'Message',
     wakingProfile: profile => `Waking up ${profile}…`,
-    placeholderStarting: 'Starting Hermes...',
-    placeholderReconnecting: 'Reconnecting to Hermes…',
+    placeholderStarting: 'Starting Houdry Agent...',
+    placeholderReconnecting: 'Reconnecting to Houdry Agent…',
     placeholderFollowUp: 'Send follow-up',
     newSessionPlaceholders: [
-      'What are we building?',
-      'Give Hermes a task',
-      "What's on your mind?",
-      'Describe what you need',
-      'What should we tackle?',
-      'Ask anything',
+      'Analyze a report — /document-analysis',
+      'Look up a procedure — /procedure-lookup',
+      'Run a calculation — /engineering-calculation',
+      'Draft a review — /report-generation',
+      'Search local knowledge — /knowledge-search',
+      'Ask Houdry Agent…',
       'Start with a goal'
     ],
     followUpPlaceholders: [
@@ -2692,7 +2692,7 @@ export const en: Translations = {
     applyRemote: 'Apply and reconnect',
     backToSetup: 'Back',
     failedTitle: 'Installation failed',
-    settingUpTitle: 'Setting up Hermes Agent',
+    settingUpTitle: 'Setting up Houdry Agent',
     finishingTitle: 'Finishing up',
     failedDesc:
       'One of the install steps failed. On Windows, this can happen if another Hermes CLI or desktop instance is running. Stop any running Hermes instances, then retry. Check the details below or the desktop log for the full transcript.',
@@ -2716,7 +2716,7 @@ export const en: Translations = {
 
   onboarding: {
     headerTitle: "Let's get you set up with Houdry Agent",
-    headerDesc: 'Connect to a Houdry fabric server (or another provider) to start chatting.',
+    headerDesc: 'Connect Azure GPT-5.6 Luna (dev) or a Houdry fabric server (prod) to start chatting.',
     preparingInstall: 'Houdry Agent is finishing install. This usually takes under a minute on first run.',
     starting: 'Starting Houdry Agent…',
     lookingUpProviders: 'Looking up providers...',
@@ -2728,7 +2728,10 @@ export const en: Translations = {
     connected: 'Connected',
     houdryFabricTitle: 'Houdry server URL',
     houdryFabricPitch:
-      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
+      'PROD — point at your fabric control plane, http://<host>:18080/v1',
+    azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
+    azureOpenAiPitch:
+      'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → Azure OpenAI',
     featuredPitch: 'One subscription, 300+ frontier models — optional cloud path via Hermes / Nous',
     fireworksPitch: 'Direct model API — Fireworks-hosted frontier models',
     openRouterPitch: 'One key, hundreds of models — a solid default',
@@ -2742,6 +2745,10 @@ export const en: Translations = {
         description: 'Hosts hundreds of models behind a single key. Good default for new installs.'
       },
       openai: { short: 'GPT-class models', description: 'Direct access to OpenAI models.' },
+      azure: {
+        short: 'GPT-5.6 Luna (DEV)',
+        description: 'Azure OpenAI deployment. Also set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT in API Keys.'
+      },
       gemini: { short: 'Gemini models', description: 'Direct access to Google Gemini models.' },
       xai: { short: 'Grok models', description: 'Direct access to xAI Grok models.' },
       local: {

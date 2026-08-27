@@ -22,24 +22,24 @@ const NEUTRAL_PERSONALITIES = new Set(['', 'default', 'none', 'neutral'])
 
 const FALLBACK_COPY: IntroCopy[] = [
   {
-    headline: 'What are we moving today?',
-    body: "Send a bug, branch, plan, or rough idea. I'll inspect the repo and turn it into the next concrete step."
-  },
-  {
-    headline: "What's on your mind?",
-    body: "Bring the code, question, or stuck part. I'll read the room before making changes."
-  },
-  {
-    headline: 'What should Hermes look at?',
-    body: "Send the task, failing path, or half-formed plan. I'll help turn it into action."
+    headline: 'Houdry Agent is ready.',
+    body: 'Type /document-analysis, /procedure-lookup, /engineering-calculation, /report-generation, or /knowledge-search. Replies use WORKFLOW, provenance, and FACT / CALCULATION labels. EXECUTE stays locked.'
   },
   {
     headline: 'Where should we start?',
-    body: "Bring the problem, goal, or file. I'll inspect first and keep the next step concrete."
+    body: 'MRPL facts come from local knowledge — not the web. Paste a document path or start with /knowledge-search.'
   },
   {
     headline: 'What needs attention?',
-    body: "Send the context you have. I'll help sort it into a plan or a fix."
+    body: 'Ask in chat or type a slash skill. Every threshold needs a source; I will not invent MRPL acceptance limits.'
+  },
+  {
+    headline: 'Ready when you are.',
+    body: 'Engineering review stays in this chat as markdown: FACT, CALCULATION, VERIFICATION, INTERPRETATION, ASSUMPTION, RECOMMENDATION.'
+  },
+  {
+    headline: 'Start anywhere.',
+    body: 'Azure GPT-5.6 Luna is the DEV path; Houdry fabric is PROD. Set the Azure key in Settings → Providers if the footer says inference is unavailable.'
   }
 ]
 
@@ -122,7 +122,7 @@ function fallbackCopyForPersonality(personalityKey: string): IntroCopy[] {
       body: "Send the task, file, or rough idea. I'll use your configured voice and keep the work grounded in this repo."
     },
     {
-      headline: `What does ${label} Hermes need to see?`,
+      headline: `What does ${label} need to see?`,
       body: "Bring the context or the stuck part. I'll adapt to your configured personality."
     },
     {
@@ -130,7 +130,7 @@ function fallbackCopyForPersonality(personalityKey: string): IntroCopy[] {
       body: "Send the problem, file, or idea. I'll follow the personality you've configured."
     },
     {
-      headline: `What should ${label} Hermes tackle?`,
+      headline: `What should ${label} tackle?`,
       body: "Drop the task here. I'll keep the work grounded in the repo."
     },
     {
@@ -144,7 +144,7 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
-const WORDMARK = 'HERMES AGENT'
+const WORDMARK = 'HOUDRY AGENT'
 
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)

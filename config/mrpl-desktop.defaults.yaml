@@ -1,0 +1,28 @@
+# First-run Desktop seed for Houdry Agent (MRPL).
+# Copied into $HERMES_HOME/config.yaml only when that file is missing.
+# Windows default home: %LOCALAPPDATA%\houdry-agent
+#
+# Azure GPT-5.6 Luna = DEV inference. Switch to Houdry fabric for PROD
+# (see config/houdry-fabric.defaults.yaml and docs/HOUDRY.md).
+# Secrets stay in $HERMES_HOME/.env — never in this file.
+
+model:
+  provider: azure # alias of azure-foundry
+  default: "gpt-5.6-luna"
+  api_mode: chat_completions
+
+approvals:
+  mode: smart # or manual for stricter human-in-the-loop
+
+memory:
+  memory_enabled: true
+  write_approval: true
+
+skills:
+  write_approval: true
+
+security:
+  redact_secrets: true
+
+# Prefer `hermes tools` to disable unrelated toolsets (image_gen, spotify,
+# homeassistant, discord_admin) rather than deleting upstream code.

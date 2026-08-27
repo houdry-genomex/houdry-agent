@@ -11,7 +11,7 @@ import {
   selectionInCatalog
 } from './model-options'
 
-const globalOptions = { model: 'hermes-4', provider: 'nous', providers: [] }
+const globalOptions = { model: 'gpt-5.6-luna', provider: 'azure', providers: [] }
 
 vi.mock('@/hermes', () => ({
   getGlobalModelOptions: vi.fn(() => Promise.resolve(globalOptions))
@@ -24,28 +24,53 @@ describe('requestModelOptions', () => {
 
   it('uses the connected gateway even before a session exists', async () => {
     const gatewayPayload = {
-      model: 'BeastMode',
-      provider: 'moa',
-      providers: [{ models: ['BeastMode'], name: 'Mixture of Agents', slug: 'moa' }]
+      model: 'gpt-5.6-luna',
+      provider: 'azure',
+      providers: [{ models: ['gpt-5.6-luna'], name: 'Azure OpenAI', slug: 'azure' }]
     }
 
     const gateway = {
       request: vi.fn(() => Promise.resolve(gatewayPayload))
     }
 
-    await expect(requestModelOptions({ gateway: gateway as never, sessionId: null })).resolves.toBe(gatewayPayload)
+    await expect(requestModelOptions({ gateway: gateway as never, sessionId: null })).resolves.toEqual(gatewayPayload)
 
     expect(gateway.request).toHaveBeenCalledWith('model.options', { explicit_only: true })
     expect(getGlobalModelOptions).not.toHaveBeenCalled()
   })
 
+  it('drops OpenCode Free and other third-party rows from the composer catalog', async () => {
+    const gateway = {
+      request: vi.fn(() =>
+        Promise.resolve({
+          model: 'x-preview-f-free',
+          provider: 'opencode-free',
+          providers: [
+            { models: ['x-preview-f-free'], name: 'OpenCode Free', slug: 'opencode-free' },
+            { models: ['gpt-5.6-luna'], name: 'Azure OpenAI', slug: 'azure' },
+            { models: ['auto'], name: 'Houdry GPU fabric', slug: 'custom' }
+          ]
+        })
+      )
+    }
+
+    await expect(requestModelOptions({ gateway: gateway as never })).resolves.toEqual({
+      model: 'x-preview-f-free',
+      provider: 'opencode-free',
+      providers: [
+        { models: ['gpt-5.6-luna'], name: 'Azure OpenAI', slug: 'azure' },
+        { models: ['auto'], name: 'Houdry GPU fabric', slug: 'custom' }
+      ]
+    })
+  })
+
   it('recovers an empty gateway catalog through profile-scoped REST without replacing the session selection', async () => {
-    const gatewayPayload = { model: 'hermes-local', provider: 'hermes-local' }
+    const gatewayPayload = { model: 'gpt-5.6-luna', provider: 'azure' }
 
     const restPayload = {
       model: 'profile-default',
-      provider: 'openai-codex',
-      providers: [{ models: ['hermes-local'], name: 'Hermes Local vLLM', slug: 'hermes-local' }]
+      provider: 'custom',
+      providers: [{ models: ['auto'], name: 'Houdry GPU fabric', slug: 'custom' }]
     }
 
     const gateway = {
@@ -56,8 +81,8 @@ describe('requestModelOptions', () => {
 
     await expect(requestModelOptions({ gateway: gateway as never, sessionId: 'session-1' })).resolves.toEqual({
       ...restPayload,
-      model: 'hermes-local',
-      provider: 'hermes-local'
+      model: 'gpt-5.6-luna',
+      provider: 'azure'
     })
 
     expect(getGlobalModelOptions).toHaveBeenCalledWith({ explicitOnly: true })
@@ -65,9 +90,9 @@ describe('requestModelOptions', () => {
 
   it('recovers through profile-scoped REST when the gateway catalog request fails', async () => {
     const restPayload = {
-      model: 'hermes-local',
-      provider: 'hermes-local',
-      providers: [{ models: ['hermes-local'], name: 'Hermes Local vLLM', slug: 'hermes-local' }]
+      model: 'auto',
+      provider: 'custom',
+      providers: [{ models: ['auto'], name: 'Houdry GPU fabric', slug: 'custom' }]
     }
 
     const gateway = {
@@ -95,13 +120,13 @@ describe('requestModelOptions', () => {
   })
 
   it('keeps the gateway result when both catalog paths have no selectable models', async () => {
-    const gatewayPayload = { model: 'hermes-local', provider: 'hermes-local', providers: [] }
+    const gatewayPayload = { model: 'gpt-5.6-luna', provider: 'azure', providers: [] }
 
     const gateway = {
       request: vi.fn(() => Promise.resolve(gatewayPayload))
     }
 
-    await expect(requestModelOptions({ gateway: gateway as never })).resolves.toBe(gatewayPayload)
+    await expect(requestModelOptions({ gateway: gateway as never })).resolves.toEqual(gatewayPayload)
   })
 
   it('passes the active session id and refresh flag through the gateway', async () => {
@@ -128,14 +153,14 @@ describe('requestModelOptions', () => {
   it('prefers an owner-routed request over the ambient gateway socket', async () => {
     const gatewayPayload = {
       model: 'chrome-model',
-      provider: 'nous',
-      providers: [{ models: ['chrome-model'], name: 'Nous', slug: 'nous' }]
+      provider: 'azure',
+      providers: [{ models: ['chrome-model'], name: 'Azure OpenAI', slug: 'azure' }]
     }
 
     const routedPayload = {
       model: 'berry-model',
-      provider: 'openai',
-      providers: [{ models: ['berry-model'], name: 'OpenAI', slug: 'openai' }]
+      provider: 'custom',
+      providers: [{ models: ['berry-model'], name: 'Houdry GPU fabric', slug: 'custom' }]
     }
 
     const gateway = {
@@ -147,7 +172,7 @@ describe('requestModelOptions', () => {
       params?: Record<string, unknown>
     ) => Promise<T>
 
-    await expect(requestModelOptions({ gateway: gateway as never, request, sessionId: 'tile-1' })).resolves.toBe(
+    await expect(requestModelOptions({ gateway: gateway as never, request, sessionId: 'tile-1' })).resolves.toEqual(
       routedPayload
     )
 
@@ -158,8 +183,8 @@ describe('requestModelOptions', () => {
   it('scopes REST recovery to the catalog owner profile', async () => {
     const restPayload = {
       model: 'berry-local',
-      provider: 'hermes-local',
-      providers: [{ models: ['berry-local'], name: 'Hermes Local', slug: 'hermes-local' }]
+      provider: 'custom',
+      providers: [{ models: ['berry-local'], name: 'Houdry GPU fabric', slug: 'custom' }]
     }
 
     const request = vi.fn(() => Promise.reject(new Error('gateway request unavailable')))
@@ -251,5 +276,19 @@ describe('reconcileSelectionAfterCatalogRefresh', () => {
     expect(reconcileSelectionAfterCatalogRefresh('glm-4.5-air', [moa])).toBeNull()
     expect(reconcileSelectionAfterCatalogRefresh('glm-4.5-air', [])).toBeNull()
     expect(reconcileSelectionAfterCatalogRefresh('glm-4.5-air', undefined)).toBeNull()
+  })
+
+  it('prefers gpt-5.6-luna over Azure gpt-3.5-turbo when reconciling', () => {
+    const azure = {
+      name: 'Azure Foundry',
+      slug: 'azure-foundry',
+      models: ['gpt-3.5-turbo', 'gpt-5.6-luna']
+    }
+
+    expect(firstSelectableCatalogModel([azure])).toEqual({ model: 'gpt-5.6-luna', provider: 'azure-foundry' })
+    expect(reconcileSelectionAfterCatalogRefresh('gpt-3.5-turbo', [azure])).toEqual({
+      model: 'gpt-5.6-luna',
+      provider: 'azure-foundry'
+    })
   })
 })

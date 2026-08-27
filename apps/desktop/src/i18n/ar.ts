@@ -339,7 +339,8 @@ export const ar = defineLocale({
     nav: {
       providers: 'المزودون',
       providerAccounts: 'الحسابات',
-      providerApiKeys: 'مفاتيح API',
+      providerApiKeys: 'Azure OpenAI',
+      providerCustomEndpoints: 'نسيج Houdry GPU',
       gateway: 'البوابة',
       apiKeys: 'الأدوات والمفاتيح',
       keysTools: 'الأدوات',
@@ -2113,7 +2114,10 @@ export const ar = defineLocale({
     connected: 'متصل',
     houdryFabricTitle: 'Houdry server URL',
     houdryFabricPitch:
-      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
+      'PROD — point at your fabric control plane, http://<host>:18080/v1',
+    azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
+    azureOpenAiPitch:
+      'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → API Keys',
     featuredPitch: 'اشتراك واحد، أكثر من 300 نموذج متقدم — الطريقة الموصى بها لتشغيل Hermes',
     fireworksPitch: 'نماذج مفتوحة سريعة مع استضافة Fireworks.',
     openRouterPitch: 'مفتاح واحد لمئات النماذج — خيار افتراضي جيد',

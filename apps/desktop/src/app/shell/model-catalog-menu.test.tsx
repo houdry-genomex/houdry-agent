@@ -31,7 +31,7 @@ beforeEach(() => {
   $visibleModels.set(null)
   setModelVisibilityOpen(false)
   getGlobalModelOptions.mockResolvedValue({
-    providers: [{ models: ['gemini-3.1-pro', 'gemini-2.5-flash'], name: 'Google', slug: 'google' }]
+    providers: [{ models: ['gpt-5.6-luna', 'gpt-4o'], name: 'Azure OpenAI', slug: 'azure' }]
   })
 })
 
@@ -74,32 +74,36 @@ function renderMenu() {
 // which is exactly the drift extracting this component was meant to prevent.
 describe('the catalog owns model curation', () => {
   it('honours the stored Edit Models shortlist', async () => {
-    setVisibleModels(new Set([modelVisibilityKey('google', 'gemini-2.5-flash')]))
+    setVisibleModels(new Set([modelVisibilityKey('azure', 'gpt-4o')]))
 
     renderMenu()
 
-    await screen.findByText(/Gemini 2\.5 Flash/i)
-    expect(screen.queryByText(/Gemini 3\.1 Pro/i)).toBeNull()
+    await screen.findByText(/GPT-4o/i)
+    expect(screen.queryByText(/GPT-5\.6-luna/i)).toBeNull()
   })
 
   it('still finds a hidden model by search — curation narrows the default view, not the catalog', async () => {
-    setVisibleModels(new Set([modelVisibilityKey('google', 'gemini-2.5-flash')]))
+    setVisibleModels(new Set([modelVisibilityKey('azure', 'gpt-4o')]))
 
     renderMenu()
-    await screen.findByText(/Gemini 2\.5 Flash/i)
+    await screen.findByText(/GPT-4o/i)
 
     const input = screen.getByRole('textbox', { name: 'Search models' })
 
-    fireEvent.change(input, { target: { value: 'gemini-3.1' } })
+    fireEvent.change(input, { target: { value: 'luna' } })
 
     await vi.waitFor(() => {
-      expect(screen.queryByText(/Gemini 3\.1 Pro/i)).not.toBeNull()
+      expect(
+        screen.queryByText(
+          (_, element) => element?.tagName === 'SPAN' && /GPT-5\.6-luna/i.test(element.textContent ?? '')
+        )
+      ).not.toBeNull()
     })
   })
 
   it('offers Edit Models without the host wiring it up', async () => {
     renderMenu()
-    await screen.findByText(/Gemini 3\.1 Pro/i)
+    await screen.findByText(/GPT-5\.6-luna/i)
 
     fireEvent.click(screen.getByText('Edit Models…'))
 

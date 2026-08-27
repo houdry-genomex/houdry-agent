@@ -26,13 +26,21 @@ import type { DesktopTheme, DesktopThemeTypography } from './types'
 // Covers macOS, Windows, Linux, plus the `emoji` generic for anything else.
 export const EMOJI_FALLBACK = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji'
 
+// Inter first — Cursor-like UI sans. Segoe / SF remain as fallbacks until the
+// stylesheet loads (or when offline). Code/diffs stay on SYSTEM_MONO.
 const SYSTEM_SANS =
-  '"Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
+  'Inter, "Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
   EMOJI_FALLBACK
 
 const SYSTEM_MONO = 'Menlo, Monaco, "SF Mono", "Courier Prime", monospace, ' + EMOJI_FALLBACK
 
-export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: SYSTEM_SANS, fontMono: SYSTEM_MONO }
+const INTER_FONT_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
+
+export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = {
+  fontSans: SYSTEM_SANS,
+  fontMono: SYSTEM_MONO,
+  fontUrl: INTER_FONT_URL
+}
 
 /**
  * Nous — the canonical Hermes desktop identity, forked from the GitHub VS Code
@@ -41,8 +49,9 @@ export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = { fontSans: SYSTEM_SAN
  * install takes, so the palette here is byte-identical to importing the
  * extension yourself.
  *
- * Typography stays Hermes's own: a VS Code theme carries no font opinion, and
- * these are the stacks every skin has been rendering with.
+ * Typography is ours, not the VS Code theme's: Inter for UI chrome and chat,
+ * system / bundled mono for code. Palettes inherit DEFAULT_TYPOGRAPHY unless
+ * they override a stack (midnight, ember, mono).
  */
 /**
  * GitHub — the upstream palette, unmodified.
@@ -115,8 +124,7 @@ export const githubTheme: DesktopTheme = {
   },
   typography: {
     fontSans: SYSTEM_SANS,
-    fontMono: SYSTEM_MONO,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
+    fontMono: SYSTEM_MONO
   },
   terminal: {
     foreground: '#1f2328',
@@ -233,8 +241,7 @@ export const nousTheme: DesktopTheme = {
   },
   typography: {
     fontSans: SYSTEM_SANS,
-    fontMono: SYSTEM_MONO,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
+    fontMono: SYSTEM_MONO
   },
   terminal: {
     foreground: '#1f2328',
@@ -658,8 +665,7 @@ export const nousAltTheme: DesktopTheme = {
   },
   typography: {
     fontSans: SYSTEM_SANS,
-    fontMono: SYSTEM_MONO,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap'
+    fontMono: SYSTEM_MONO
   }
 }
 
@@ -699,7 +705,7 @@ export const midnightTheme: DesktopTheme = {
   },
   typography: {
     fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap'
+    fontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap'
   }
 }
 
@@ -735,7 +741,7 @@ export const emberTheme: DesktopTheme = {
   },
   typography: {
     fontMono: `"IBM Plex Mono", ${SYSTEM_MONO}`,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap'
+    fontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap'
   }
 }
 

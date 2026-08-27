@@ -273,10 +273,25 @@ def build_models_payload(
     if featured:
         _apply_featured(rows)
     _apply_custom_aliases(rows)
+    _apply_azure_foundry_chat_models(rows)
+
+    current_model = str(ctx.current_model or "").strip()
+    current_provider = str(ctx.current_provider or "").strip()
+    try:
+        from hermes_cli.azure_openai_env import (
+            _PROVIDER_ALIASES,
+            coerce_azure_openai_model,
+        )
+
+        prov = _PROVIDER_ALIASES.get(current_provider.lower(), current_provider.lower())
+        if prov == "azure-foundry":
+            current_model = coerce_azure_openai_model(current_model)
+    except Exception:
+        pass
 
     return {
         "providers": rows,
-        "model": ctx.current_model,
+        "model": current_model,
         "provider": ctx.current_provider,
     }
 
@@ -586,6 +601,42 @@ def _apply_custom_aliases(rows: list[dict]) -> None:
             )
         except Exception:
             continue
+
+
+def _apply_azure_foundry_chat_models(rows: list[dict]) -> None:
+    """Keep Azure OpenAI chat rows on real deployments, not leftover Claude ids."""
+    try:
+        from hermes_cli.azure_openai_env import (
+            coerce_azure_openai_model,
+            get_azure_deployment,
+            is_azure_openai_chat_model,
+        )
+    except Exception:
+        return
+
+    mode = ""
+    try:
+        from hermes_cli.config import load_config
+
+        mode = str((load_config().get("model") or {}).get("api_mode") or "").strip().lower()
+    except Exception:
+        mode = ""
+    if mode in {"anthropic_messages", "anthropic"}:
+        return
+
+    dep = get_azure_deployment() or coerce_azure_openai_model("")
+    azure_slugs = {"azure-foundry", "azure", "azure-openai", "azure-ai", "azure_openai"}
+    for row in rows:
+        if str(row.get("slug") or "").lower() not in azure_slugs:
+            continue
+        models = [
+            m
+            for m in (row.get("models") or [])
+            if is_azure_openai_chat_model(str(m)) and str(m).rsplit("/", 1)[-1] != dep and m != dep
+        ]
+        models.insert(0, dep)
+        row["models"] = models
+        row["total_models"] = len(models)
 
 
 # ─── Internal: row post-processing ──────────────────────────────────────

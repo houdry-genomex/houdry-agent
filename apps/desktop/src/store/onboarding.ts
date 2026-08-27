@@ -192,7 +192,7 @@ function shouldPreserveConfiguredOnFallback(runtime: RuntimeReadinessResult, sta
 }
 
 function notifyReady(provider: string) {
-  notify({ kind: 'success', title: 'Hermes is ready', message: `${provider} connected.` })
+  notify({ kind: 'success', title: 'Houdry Agent is ready', message: `${provider} connected.` })
 }
 
 // Human-friendly labels for tools auto-routed through the Nous Tool Gateway,
@@ -798,6 +798,10 @@ export async function saveOnboardingApiKey(
     return saveOnboardingLocalEndpoint(trimmed, endpointApiKey?.trim() ?? '', ctx)
   }
 
+  if (envKey === 'AZURE_OPENAI_API_KEY' || envKey === 'AZURE_FOUNDRY_API_KEY') {
+    return saveOnboardingAzureKey(envKey, trimmed, ctx)
+  }
+
   // No key validation here on purpose: we previously live-probed the key and
   // hard-blocked on a runtime check after saving, which rejected too many
   // legitimate users (corporate proxies, regional blocks, flaky/rate-limited
@@ -818,6 +822,25 @@ export async function saveOnboardingApiKey(
     return { ok: true }
   } catch (error) {
     notifyError(error, `Could not save ${label}`)
+
+    return { ok: false, message: errMessage(error) }
+  }
+}
+
+async function saveOnboardingAzureKey(envKey: string, apiKey: string, ctx: OnboardingContext) {
+  try {
+    await setEnvVar(envKey, apiKey)
+    await setMainModelAssignment({ model: 'gpt-5.6-luna', provider: 'azure' }, undefined, {
+      skipConfirmPrompt: true
+    }).catch(() => undefined)
+    await ctx.requestGateway('reload.env').catch(() => undefined)
+    notifyReady('Azure OpenAI')
+    completeDesktopOnboarding()
+    ctx.onCompleted?.()
+
+    return { ok: true }
+  } catch (error) {
+    notifyError(error, 'Could not save Azure OpenAI key')
 
     return { ok: false, message: errMessage(error) }
   }

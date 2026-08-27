@@ -4,8 +4,8 @@
    type — none of which is how this app draws a floating popover. Repaint it
    with the popover primitive's own recipe (components/ui/popover.tsx): a glass
    fill over --ui-bg-elevated, a single --ui-stroke-secondary hairline, and NO
-   shadow. Radius and type follow the app scale, which is near-square
-   (--radius-scalar: 0.2) and 12px-based.
+   shadow. Radius and type follow the app scale (`--radius-scalar`) and
+   12px-based type.
 
    The scrim and the cutout geometry are config, not CSS — see TOUR_STYLE in
    run-tour.ts.
@@ -66,11 +66,11 @@
   color: var(--foreground);
 }
 
-/* Matches the Button `secondary` + `xs` shape: 12px/1rem medium, 2.5px radius. */
+/* Matches the Button `secondary` + `xs` shape: 12px/1rem medium, token radius. */
 .driver-popover-footer-btn {
   background-color: var(--ui-bg-quaternary);
   border: none;
-  border-radius: 2.5px;
+  border-radius: var(--radius-md);
   color: var(--foreground);
   font-family: var(--font-sans);
   font-size: 0.75rem;

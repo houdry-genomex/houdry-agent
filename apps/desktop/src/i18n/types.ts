@@ -2314,6 +2314,8 @@ export interface Translations {
     featuredPitch: string
     houdryFabricTitle: string
     houdryFabricPitch: string
+    azureOpenAiTitle: string
+    azureOpenAiPitch: string
     fireworksPitch: string
     openRouterPitch: string
     apiKeyOptions: Record<string, { short: string; description: string }>

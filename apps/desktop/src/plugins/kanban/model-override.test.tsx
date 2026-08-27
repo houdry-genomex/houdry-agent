@@ -28,7 +28,7 @@ vi.mock('@/hermes', () => ({
 
 beforeEach(() => {
   getGlobalModelOptions.mockResolvedValue({
-    providers: [{ models: ['gemini-3.1-pro', 'gemini-2.5-flash'], name: 'Google', slug: 'google' }]
+    providers: [{ models: ['gpt-5.6-luna', 'gpt-4o'], name: 'Azure OpenAI', slug: 'azure' }]
   })
 })
 
@@ -95,24 +95,24 @@ describe('the shared catalog menu, driven by an override controller', () => {
     const onChange = renderMenu()
 
     // Rows render the display name; the controller receives the raw id.
-    fireEvent.click(await screen.findByText(/Gemini 3\.1 Pro/i))
+    fireEvent.click(await screen.findByText(/GPT-5\.6-luna/i))
 
     const picked = onChange.mock.calls.at(-1)![0]
 
-    expect(picked.model).toBe('gemini-3.1-pro')
-    expect(picked.provider).toBe('google')
+    expect(picked.model).toBe('gpt-5.6-luna')
+    expect(picked.provider).toBe('azure')
   })
 
   it('never renders MoA presets — a preset is not a worker model', async () => {
     getGlobalModelOptions.mockResolvedValue({
       providers: [
-        { models: ['gemini-3.1-pro'], name: 'Google', slug: 'google' },
+        { models: ['gpt-5.6-luna'], name: 'Azure OpenAI', slug: 'azure' },
         { models: ['BeastMode'], name: 'Mixture of Agents', slug: 'moa' }
       ]
     })
 
     renderMenu()
-    await screen.findByText(/Gemini 3\.1 Pro/i)
+    await screen.findByText(/GPT-5\.6-luna/i)
 
     expect(screen.queryByText(/BeastMode/)).toBeNull()
   })

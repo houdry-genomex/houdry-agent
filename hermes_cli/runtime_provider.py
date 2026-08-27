@@ -351,8 +351,8 @@ def _get_model_config() -> Dict[str, Any]:
         try:
             from hermes_cli.azure_openai_env import (
                 _PROVIDER_ALIASES,
+                coerce_azure_openai_model,
                 get_azure_base_url,
-                get_azure_deployment,
             )
 
             prov_raw = str(cfg.get("provider") or "").strip().lower()
@@ -362,10 +362,10 @@ def _get_model_config() -> Dict[str, Any]:
                     env_url = get_azure_base_url()
                     if env_url:
                         cfg["base_url"] = env_url
-                if not (str(cfg.get("default") or "").strip()):
-                    dep = get_azure_deployment()
-                    if dep:
-                        cfg["default"] = dep
+                cfg["default"] = coerce_azure_openai_model(
+                    str(cfg.get("default") or "").strip(),
+                    api_mode=str(cfg.get("api_mode") or ""),
+                )
             # Houdry fabric shortcut: provider houdry|fabric with no URL → local /v1.
             if prov_raw in {"houdry", "houdry-fabric", "fabric"} and not (
                 cfg.get("base_url") or ""
@@ -571,6 +571,14 @@ def _resolve_runtime_from_pool_entry(
             configured_mode = _parse_api_mode(model_cfg.get("api_mode"))
             if configured_mode:
                 api_mode = configured_mode
+        try:
+            from hermes_cli.azure_openai_env import coerce_azure_openai_model
+
+            effective_model = coerce_azure_openai_model(
+                str(effective_model or ""), api_mode=api_mode
+            )
+        except Exception:
+            pass
         # Model-family inference for GPT-5.x / codex / o1-o4: Azure rejects
         # /chat/completions on these with 400 "operation unsupported" — see
         # azure_foundry_model_api_mode() for rationale.  Skip when the user
@@ -1548,6 +1556,14 @@ def _resolve_azure_foundry_runtime(
     effective_model = str(
         target_model or model_cfg.get("default") or env_deployment or ""
     ).strip()
+    try:
+        from hermes_cli.azure_openai_env import coerce_azure_openai_model
+
+        effective_model = coerce_azure_openai_model(
+            effective_model, api_mode=cfg_api_mode
+        )
+    except Exception:
+        pass
     if (
         effective_model
         and not explicit_api_mode
@@ -1708,6 +1724,7 @@ def _resolve_azure_foundry_runtime(
     }
     if effective_model:
         result["deployment"] = effective_model
+        result["model"] = effective_model
     return result
 
 

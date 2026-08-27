@@ -181,7 +181,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
     surface: action('handoff'),
     argumentMode: 'options'
   },
-  { name: '/profile', description: 'Switch the active Hermes profile', surface: action('profile') },
+  { name: '/profile', description: 'Switch the active Houdry profile', surface: action('profile') },
   {
     name: '/skin',
     description: 'Switch desktop theme or cycle to the next one',
@@ -325,7 +325,7 @@ const DESKTOP_COMMAND_SPECS: readonly DesktopCommandSpec[] = [
   },
   { name: '/undo', description: 'Remove the last user/assistant exchange', surface: exec() },
   { name: '/usage', description: 'Show token usage for this session', surface: exec() },
-  { name: '/version', description: 'Show Hermes Agent version', surface: exec() },
+  { name: '/version', description: 'Show Houdry Agent version', surface: exec() },
 
   // No desktop surface, but carry an alias (underscore spelling variants).
   { name: '/reload-mcp', aliases: ['/reload_mcp'], surface: unavailable('advanced') },
@@ -560,12 +560,25 @@ export function desktopSkinSlashCompletions(
  * skills someone reaches for daily under a hundred they have never opened.
  *
  * `pruneUnusedBuiltins` additionally drops bundled skills with no recorded
- * activity — the ones that ship with Hermes and were never asked for. It is
- * for BROWSING (a bare `/`) only: typing a query is a search, and a search
- * must never hide a match.
+ * activity — the ones that ship unused. MRPL skills are never pruned: they are
+ * the default Desktop workflow and must stay visible on a bare `/`.
  *
  * Older backends send no `skills` map; then nothing is reordered or dropped.
  */
+export const FEATURED_MRPL_SKILL_COMMANDS = [
+  '/document-analysis',
+  '/procedure-lookup',
+  '/engineering-calculation',
+  '/report-generation',
+  '/knowledge-search'
+] as const
+
+const FEATURED_MRPL_SKILL_SET = new Set<string>(FEATURED_MRPL_SKILL_COMMANDS)
+
+export function isFeaturedMrplSkillCommand(command: string): boolean {
+  return FEATURED_MRPL_SKILL_SET.has(canonicalDesktopSlashCommand(command))
+}
+
 export function rankSkillCommands<T extends { text: string }>(
   rows: readonly T[],
   skills: SkillCatalogMap | undefined,
@@ -580,6 +593,10 @@ export function rankSkillCommands<T extends { text: string }>(
 
   const kept = pruneUnusedBuiltins
     ? rows.filter(row => {
+        if (isFeaturedMrplSkillCommand(row.text)) {
+          return true
+        }
+
         const entry = entryOf(row)
 
         // Unknown to the map (a quick command, a newer skill the catalog
@@ -588,7 +605,17 @@ export function rankSkillCommands<T extends { text: string }>(
       })
     : [...rows]
 
-  return kept.sort((a, b) => usageOf(b) - usageOf(a) || a.text.localeCompare(b.text))
+  return kept.sort((a, b) => {
+    if (pruneUnusedBuiltins) {
+      const featuredDelta = Number(isFeaturedMrplSkillCommand(b.text)) - Number(isFeaturedMrplSkillCommand(a.text))
+
+      if (featuredDelta !== 0) {
+        return featuredDelta
+      }
+    }
+
+    return usageOf(b) - usageOf(a) || a.text.localeCompare(b.text)
+  })
 }
 
 export function filterDesktopCommandsCatalog(catalog: CommandsCatalogLike): CommandsCatalogLike {

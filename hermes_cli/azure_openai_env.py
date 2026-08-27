@@ -218,6 +218,53 @@ def get_azure_deployment() -> str:
     return _env_or_config(*_DEPLOYMENT_ENVS)
 
 
+_DEFAULT_AZURE_CHAT_DEPLOYMENT = "gpt-5.6-luna"
+
+# Session leftovers from Anthropic / OpenCode / other catalogs are not Azure
+# OpenAI deployments. Sending them as ``/openai/deployments/{id}`` 404s.
+_FOREIGN_AZURE_CHAT_MODEL = re.compile(
+    r"(claude|anthropic|gemini|llama|mistral|deepseek|qwen|grok|"
+    r"nemotron|opencode|hy3|laguna|muse[-_]?spark|(?<![a-z])opus(?![a-z])|"
+    r"sonnet|haiku)",
+    re.I,
+)
+
+
+def azure_openai_model_base_id(model: str) -> str:
+    return (model or "").strip().rsplit("/", 1)[-1]
+
+
+def is_azure_openai_chat_model(model: str) -> bool:
+    """True when ``model`` can be an Azure OpenAI chat deployment name."""
+    base = azure_openai_model_base_id(model)
+    if not base:
+        return False
+    lowered = base.lower()
+    if lowered.startswith(("gpt-", "o1", "o3", "o4")):
+        return True
+    return not bool(_FOREIGN_AZURE_CHAT_MODEL.search(lowered))
+
+
+def coerce_azure_openai_model(requested: str, *, api_mode: str = "") -> str:
+    """Replace leftover Claude/OpenCode ids with the Azure chat deployment.
+
+    Anthropic-style Foundry (``api_mode: anthropic_messages``) keeps Claude ids.
+    """
+    mode = (api_mode or "").strip().lower()
+    dep = get_azure_deployment() or _DEFAULT_AZURE_CHAT_DEPLOYMENT
+    raw = (requested or "").strip()
+    if mode in {"anthropic_messages", "anthropic"}:
+        return raw or dep
+    if not raw:
+        return dep
+    base = azure_openai_model_base_id(raw)
+    if base == dep or raw == dep:
+        return dep
+    if is_azure_openai_chat_model(raw):
+        return base
+    return dep
+
+
 def resolve_llm_provider_override() -> Optional[str]:
     """Map HERMES_LLM_PROVIDER / HERMES_INFERENCE_PROVIDER to a canonical id."""
     raw = _first_env(*_PROVIDER_OVERRIDE_ENVS).lower()

@@ -43,7 +43,7 @@ describe('desktop i18n runtime translator', () => {
 
     setRuntimeI18nLocale('zh-hant')
     expect(translateNow('settings.appearance.title')).toBe('外觀')
-    expect(translateNow('settings.nav.providerApiKeys')).toBe('API 金鑰')
+    expect(translateNow('settings.nav.providerApiKeys')).toBe('Azure OpenAI')
 
     setRuntimeI18nLocale('ar')
     expect(translateNow('settings.appearance.reasoningCollapsedTitle')).toBe('طي التفكير افتراضيًا')
@@ -67,7 +67,7 @@ describe('desktop i18n runtime translator', () => {
       boot.ready = undefined
       setRuntimeI18nLocale('ja')
 
-      expect(translateNow('boot.ready')).toBe('Hermes Desktop is ready')
+      expect(translateNow('boot.ready')).toBe('Houdry Agent is ready')
     } finally {
       boot.ready = originalReady
     }

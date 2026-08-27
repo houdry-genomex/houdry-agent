@@ -86,6 +86,14 @@ Menus and popovers use their own shared `shadow-md` +
 dashed targets and local blur. These are semantic surface classes, not licenses
 for call-site shadow or border inventions.
 
+## Radius & type
+
+- **`--radius-scalar`** in `src/styles.css` is the one knob for surface
+  rounding. `rounded-sm`/`md`/`lg`/`xl`/`2xl` scale from it. Do not reintroduce
+  `rounded-[2.5px]` (or similar) on chrome that should follow the token.
+- Default UI sans is **Inter** (then Segoe / SF / system). Code, diffs, and
+  terminals stay mono. The empty-state wordmark stays `Collapse`.
+
 ## Stroke & color tokens
 
 | Token | Use |
@@ -153,8 +161,10 @@ context-dependent (e.g. "Show" / "Hide"). Never hardcode combos; always use
 `useKeybindHint` or `TipKeybindLabel`.
 
 Notes:
-- Text buttons are square (no radius) and sized by padding + line-height (no
-  fixed heights). Only icon buttons carry the shared 4px radius.
+- Filled, outline, ghost, and icon buttons use `rounded-md` (follows
+  `--radius-scalar`). Sized by padding + line-height (no fixed heights)
+  except the icon family. Titlebar window controls stay `rounded-[4px]`.
+- Text / link / textStrong stay unboxed. Don't add a fill just to round them.
 - SVGs inherit `size-3.5` (`size-3` at `xs`). Don't re-set icon size.
 - Polymorph with `asChild` when the button must render as a link/Slot.
 
@@ -168,6 +178,7 @@ Sizes: `default`, `xs`, `overlay` (titlebar glyph counts).
 
 - **`controlVariants`** (`src/components/ui/control.ts`) is the shared shape for
   `Input` / `Textarea` / `SelectTrigger`. New text-entry controls compose it.
+  Radius is `rounded-md` — same token as filled buttons.
 - **`SearchField`** — borderless, underline-on-focus, auto-width. The only
   search input. Don't build boxed search bars; don't wrap it in a bordered tile.
   Empty lists hide their search field.

@@ -274,8 +274,8 @@ export const ja = defineLocale({
     nav: {
       providers: 'プロバイダー',
       providerAccounts: 'アカウント',
-      providerApiKeys: 'API キー',
-      providerCustomEndpoints: 'カスタムエンドポイント',
+      providerApiKeys: 'Azure OpenAI',
+      providerCustomEndpoints: 'Houdry GPU ファブリック',
       gateway: 'ゲートウェイ',
       apiKeys: 'ツールとキー',
       keybinds: 'キーボードショートカット',
@@ -2369,7 +2369,10 @@ export const ja = defineLocale({
     connected: '接続済み',
     houdryFabricTitle: 'Houdry server URL',
     houdryFabricPitch:
-      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
+      'PROD — point at your fabric control plane, http://<host>:18080/v1',
+    azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
+    azureOpenAiPitch:
+      'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → API Keys',
     featuredPitch: '1 つのサブスクリプションで 300 以上の最先端モデル — Hermes を実行するための推奨方法',
     fireworksPitch: '直接モデル API — Fireworks がホストする最先端モデル',
     openRouterPitch: '1 つのキーで数百のモデル — 堅実なデフォルト',

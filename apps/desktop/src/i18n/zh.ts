@@ -379,8 +379,8 @@ export const zh: Translations = {
     nav: {
       providers: '提供方',
       providerAccounts: '账号',
-      providerApiKeys: 'API 密钥',
-      providerCustomEndpoints: '自定义端点',
+      providerApiKeys: 'Azure OpenAI',
+      providerCustomEndpoints: 'Houdry GPU fabric',
       gateway: '网关',
       apiKeys: '工具与密钥',
       keybinds: '键盘快捷键',
@@ -2899,7 +2899,10 @@ export const zh: Translations = {
     connected: '已连接',
     houdryFabricTitle: 'Houdry server URL',
     houdryFabricPitch:
-      'Point at your fabric control plane — http://<host>:18080/v1 — recommended for private GPU chat and tools',
+      'PROD — point at your fabric control plane, http://<host>:18080/v1',
+    azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
+    azureOpenAiPitch:
+      'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → API Keys',
     featuredPitch: '一个订阅，300+ 前沿模型 — 运行 Hermes 的推荐方式',
     fireworksPitch: '直接模型 API — Fireworks 托管的前沿模型',
     openRouterPitch: '一个密钥，数百个模型 — 稳妥的默认选择',

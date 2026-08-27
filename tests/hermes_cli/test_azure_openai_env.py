@@ -7,9 +7,11 @@ import pytest
 from hermes_cli.auth import AuthError
 from hermes_cli.azure_openai_env import (
     build_azure_openai_base_url,
+    coerce_azure_openai_model,
     get_azure_api_key,
     get_azure_base_url,
     get_azure_deployment,
+    is_azure_openai_chat_model,
     normalize_azure_openai_endpoint,
     resolve_llm_provider_override,
 )
@@ -178,6 +180,44 @@ class TestResolveAzureRuntime:
         )
         assert runtime["api_key"] == "from-cli"
         assert runtime["api_mode"] == "chat_completions"
+
+
+class TestCoerceAzureChatModel:
+    def test_keeps_gpt_deployment(self):
+        assert is_azure_openai_chat_model("gpt-5.6-luna")
+        assert coerce_azure_openai_model("gpt-4o") == "gpt-4o"
+
+    def test_replaces_claude_opus_leftover(self, monkeypatch):
+        monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.6-luna")
+        assert not is_azure_openai_chat_model("claude-opus-4.6")
+        assert coerce_azure_openai_model("claude-opus-4.6") == "gpt-5.6-luna"
+        assert coerce_azure_openai_model("anthropic/claude-opus-4.6") == "gpt-5.6-luna"
+
+    def test_keeps_claude_on_anthropic_foundry(self):
+        assert (
+            coerce_azure_openai_model("claude-opus-4.6", api_mode="anthropic_messages")
+            == "claude-opus-4.6"
+        )
+
+    def test_opus_target_builds_luna_deployment_url(self, monkeypatch):
+        monkeypatch.setenv("AZURE_OPENAI_API_KEY", "sk-azure-test-key-long")
+        monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://luna.openai.azure.com/")
+        monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.6-luna")
+        monkeypatch.setenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
+        runtime = _resolve_azure_foundry_runtime(
+            requested_provider="azure-foundry",
+            target_model="claude-opus-4.6",
+            model_cfg={
+                "provider": "azure-foundry",
+                "default": "claude-opus-4.6",
+                "api_mode": "chat_completions",
+            },
+        )
+        assert runtime["model"] == "gpt-5.6-luna"
+        assert runtime["base_url"] == (
+            "https://luna.openai.azure.com/openai/deployments/gpt-5.6-luna"
+            "?api-version=2024-12-01-preview"
+        )
 
 
 class TestHoudryStillCustom:
