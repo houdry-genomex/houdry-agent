@@ -40,7 +40,15 @@ houdry node join --server http://127.0.0.1:18080
 
 **2. Agent defaults**
 
-On first configure, point the model provider at Houdry:
+On first run, pick **Houdry server URL** (recommended) and keep
+`http://127.0.0.1:18080/v1` (or your LAN/Tailscale fabric host). Optional API
+key: `houdry`. Or seed config without the UI:
+
+```bash
+./scripts/seed-houdry-fabric-config.sh
+```
+
+Equivalent YAML:
 
 ```yaml
 # ~/.houdry-agent/config.yaml  (created under HERMES_HOME-compatible layout)
@@ -63,10 +71,11 @@ Or copy [config/houdry-fabric.defaults.yaml](config/houdry-fabric.defaults.yaml)
 cd apps/desktop
 npm install   # from repo root install instructions as upstream
 npm run dev   # development
-# Packaging: npm run dist / dist:linux / dist:mac / dist:win
+# Packaging (GitHub Releases on this repo):
+#   npm run dist:linux | dist:mac | dist:win
 ```
 
-See [docs/HOUDRY.md](docs/HOUDRY.md) for fabric wiring, data directories, and release notes.
+Smoke checklist + packaging outline: [docs/HOUDRY.md](docs/HOUDRY.md).
 
 ## License
 
