@@ -55,5 +55,18 @@ the response contract; Desktop does not add a second chat UI.
 
 ## Out of scope here
 
-Phase 7 Hermes pruning, SharePoint/ERP/QMS, a custom MRPL launcher, replacing
-chat with a form wizard, signed `.exe` installer.
+Phase 7 Hermes pruning of the **development git tree**, SharePoint/ERP/QMS, a
+custom MRPL launcher, replacing chat with a form wizard.
+
+Plant users do **not** clone this repo. The Desktop installer / website download
+runs `scripts/install.ps1` (or `install.sh`), which clones
+`houdry-genomex/houdry-agent` and `uv sync --extra all`. On this fork `[all]`
+is the thin `[mrpl]` extra (Azure + Houdry fabric + `hermes serve`) — not
+Google / Home Assistant / SMS / ACP / YouTube / MCP. After clone, git
+sparse-checkout drops `website/`, `tests/`, `optional-skills/`, `evals/`, and
+unused plugins from the **install tree only**. Do not run that installer
+against a development checkout.
+
+A signed `.exe` store listing is still a separate packaging step; GitHub
+Releases is the current download surface
+([houdry-genomex/houdry-agent](https://github.com/houdry-genomex/houdry-agent/releases)).

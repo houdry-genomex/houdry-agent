@@ -64,6 +64,48 @@ def _get_platform_default_hermes_home() -> Path:
     return Path.home() / ".houdry-agent"
 
 
+# Official product repo for website / installer / `hermes update`.
+# Distinct from upstream NousResearch/hermes-agent (this is a branded fork).
+OFFICIAL_GITHUB_OWNER = "houdry-genomex"
+OFFICIAL_GITHUB_REPO = "houdry-agent"
+OFFICIAL_REPO_HTTPS_URL = (
+    f"https://github.com/{OFFICIAL_GITHUB_OWNER}/{OFFICIAL_GITHUB_REPO}.git"
+)
+OFFICIAL_REPO_SSH_URL = (
+    f"git@github.com:{OFFICIAL_GITHUB_OWNER}/{OFFICIAL_GITHUB_REPO}.git"
+)
+OFFICIAL_REPO_URL = OFFICIAL_REPO_HTTPS_URL
+OFFICIAL_REPO_URLS = {
+    OFFICIAL_REPO_HTTPS_URL,
+    OFFICIAL_REPO_SSH_URL,
+    f"https://github.com/{OFFICIAL_GITHUB_OWNER}/{OFFICIAL_GITHUB_REPO}",
+    f"git@github.com:{OFFICIAL_GITHUB_OWNER}/{OFFICIAL_GITHUB_REPO}",
+}
+
+
+def official_github_archive_url(
+    *, commit: str = "", tag: str = "", branch: str = "main"
+) -> str:
+    """GitHub source ZIP for a commit, tag, or branch of the official repo."""
+    base = (
+        f"https://github.com/{OFFICIAL_GITHUB_OWNER}/{OFFICIAL_GITHUB_REPO}/archive"
+    )
+    if commit:
+        return f"{base}/{commit}.zip"
+    if tag:
+        return f"{base}/refs/tags/{tag}.zip"
+    return f"{base}/refs/heads/{branch}.zip"
+
+
+def official_github_raw_url(ref: str, relpath: str) -> str:
+    """raw.githubusercontent.com URL for a path in the official repo."""
+    rel = str(relpath).lstrip("/")
+    return (
+        f"https://raw.githubusercontent.com/{OFFICIAL_GITHUB_OWNER}/"
+        f"{OFFICIAL_GITHUB_REPO}/{ref}/{rel}"
+    )
+
+
 def _hermes_home_from_env() -> Path:
     """Resolve HERMES_HOME from the process environment only.
 

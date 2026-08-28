@@ -236,7 +236,7 @@ async function locateHermes(ssh, remoteHermesPath) {
 
   const err: any = new Error(
     'Hermes is not installed on the remote host (could not find a `hermes` executable). ' +
-      'Install it on the remote with:  curl -fsSL https://hermes-agent.nousresearch.com/install.sh | sh  ' +
+      'Install it on the remote with:  curl -fsSL https://raw.githubusercontent.com/houdry-genomex/houdry-agent/main/scripts/install.sh | sh  ' +
       '— or set the Hermes path explicitly in the SSH connection settings.'
   )
 

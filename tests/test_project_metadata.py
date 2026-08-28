@@ -44,6 +44,27 @@ def test_matrix_extra_not_in_all():
     )
 
 
+def test_all_extra_is_mrpl_thin():
+    """Website / installer `uv sync --extra all` must resolve to [mrpl], not
+    Google / HA / SMS / ACP / YouTube / MCP. Those extras still exist as
+    named opt-ins; they must not ride the plant download.
+    """
+    optional_dependencies = _load_optional_dependencies()
+    assert "mrpl" in optional_dependencies
+    all_specs = optional_dependencies["all"]
+    assert any("mrpl" in spec for spec in all_specs), (
+        "[all] must include hermes-agent[mrpl] so install.ps1 --extra all "
+        f"stays the thin plant extra. Found: {all_specs}"
+    )
+    forbidden = ("google", "youtube", "homeassistant", "sms", "acp", "mcp")
+    joined = " ".join(all_specs + optional_dependencies["mrpl"])
+    for extra in forbidden:
+        assert f"hermes-agent[{extra}]" not in joined, (
+            f"[{extra}] must not be in [all] or [mrpl] for the plant installer. "
+            f"Found in: {joined}"
+        )
+
+
 def test_lazy_installable_extras_excluded_from_all():
     """Policy (2026-05-12): every extra that has a `LAZY_DEPS` entry
     in `tools/lazy_deps.py` must be excluded from [all].

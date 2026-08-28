@@ -1,7 +1,7 @@
 /**
  * Pure helpers for choosing a remote URL during passive update checks.
  *
- * A public install can end up with `origin=git@github.com:NousResearch/hermes-agent.git`.
+ * A public install can end up with `origin=git@github.com:houdry-genomex/houdry-agent.git`.
  * If the user's GitHub SSH key is FIDO2/passkey-backed, a background `git fetch
  * origin` triggers an unexplained hardware-touch prompt. For passive checks
  * against the official repo we substitute the public HTTPS `ls-remote` path,
@@ -12,8 +12,10 @@
  * testable without booting Electron (main.ts requires('electron') at load).
  */
 
-const OFFICIAL_REPO_HTTPS_URL = 'https://github.com/NousResearch/hermes-agent.git'
-const OFFICIAL_REPO_CANONICAL = 'github.com/nousresearch/hermes-agent'
+const OFFICIAL_GITHUB_OWNER = 'houdry-genomex'
+const OFFICIAL_GITHUB_REPO = 'houdry-agent'
+const OFFICIAL_REPO_HTTPS_URL = `https://github.com/${OFFICIAL_GITHUB_OWNER}/${OFFICIAL_GITHUB_REPO}.git`
+const OFFICIAL_REPO_CANONICAL = `github.com/${OFFICIAL_GITHUB_OWNER}/${OFFICIAL_GITHUB_REPO}`.toLowerCase()
 
 // Normalize common GitHub remote URL forms to `host/owner/repo` (lowercased,
 // no trailing slash, no .git suffix) so SSH and HTTPS forms of the same repo
@@ -62,4 +64,12 @@ function isOfficialSshRemote(url) {
   return isSshRemote(url) && canonicalGitHubRemote(url) === OFFICIAL_REPO_CANONICAL
 }
 
-export { canonicalGitHubRemote, isOfficialSshRemote, isSshRemote, OFFICIAL_REPO_CANONICAL, OFFICIAL_REPO_HTTPS_URL }
+export {
+  canonicalGitHubRemote,
+  isOfficialSshRemote,
+  isSshRemote,
+  OFFICIAL_GITHUB_OWNER,
+  OFFICIAL_GITHUB_REPO,
+  OFFICIAL_REPO_CANONICAL,
+  OFFICIAL_REPO_HTTPS_URL
+}

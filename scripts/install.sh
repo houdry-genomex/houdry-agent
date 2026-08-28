@@ -1,15 +1,17 @@
 #!/bin/bash
 # ============================================================================
-# Hermes Agent Installer
+# Houdry Agent Installer
 # ============================================================================
 # Installation script for Linux, macOS, and Android/Termux.
 # Uses uv for desktop/server installs and Python's stdlib venv + pip on Termux.
 #
 # Usage:
-#   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/houdry-genomex/houdry-agent/main/scripts/install.sh | bash
 #
 # Or with options:
 #   curl -fsSL ... | bash -s -- --no-venv --skip-setup
+#
+# Default install is the thin MRPL extra ([all] -> [mrpl]).
 #
 # ============================================================================
 
@@ -43,9 +45,11 @@ NC='\033[0m' # No Color
 BOLD='\033[1m'
 
 # Configuration
-REPO_URL_SSH="git@github.com:NousResearch/hermes-agent.git"
-REPO_URL_HTTPS="https://github.com/NousResearch/hermes-agent.git"
-HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+REPO_OWNER="houdry-genomex"
+REPO_NAME="houdry-agent"
+REPO_URL_SSH="git@github.com:${REPO_OWNER}/${REPO_NAME}.git"
+REPO_URL_HTTPS="https://github.com/${REPO_OWNER}/${REPO_NAME}.git"
+HERMES_HOME="${HERMES_HOME:-$HOME/.houdry-agent}"
 # INSTALL_DIR is resolved AFTER arg parsing and OS detection so we can pick an
 # FHS-style layout for root installs.  Track whether the user gave us an
 # explicit directory — if so we never override it.
@@ -184,9 +188,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --non-interactive  Skip stages that require user input"
             echo "  --include-desktop  Also build the desktop app (apps/desktop -> Hermes.app)"
             echo "  --dir PATH     Installation directory"
-            echo "                   default (non-root):  ~/.hermes/hermes-agent"
+            echo "                   default (non-root):  ~/.houdry-agent/hermes-agent"
             echo "                   default (root, Linux): /usr/local/lib/hermes-agent"
-            echo "  --hermes-home PATH  Data directory (default: ~/.hermes, or \$HERMES_HOME)"
+            echo "  --hermes-home PATH  Data directory (default: ~/.houdry-agent, or \$HERMES_HOME)"
             echo "  -h, --help     Show this help"
             echo ""
             echo "Notes:"
@@ -1338,6 +1342,26 @@ show_manual_install_hint() {
 # Installation
 # ============================================================================
 
+apply_mrpl_thin_checkout() {
+    local spec="$INSTALL_DIR/config/mrpl-install.sparse-checkout"
+    if [ ! -f "$spec" ]; then
+        return 0
+    fi
+    log_info "Applying MRPL thin checkout (docs/tests/unused plugins omitted)..."
+    (
+        cd "$INSTALL_DIR" || exit 0
+        git sparse-checkout init --no-cone >/dev/null 2>&1 || true
+        sparse_path="$(git rev-parse --git-path info/sparse-checkout 2>/dev/null)" || exit 0
+        if [ -z "$sparse_path" ]; then
+            exit 0
+        fi
+        cp "$spec" "$sparse_path"
+        git sparse-checkout reapply >/dev/null 2>&1 || true
+        git config houdry.thinInstall true
+    )
+    log_success "Thin checkout applied"
+}
+
 clone_repo() {
     log_info "Installing to $INSTALL_DIR..."
 
@@ -1524,6 +1548,8 @@ EOF
             fi
         fi
     fi
+
+    apply_mrpl_thin_checkout
 
     log_success "Repository ready"
 }

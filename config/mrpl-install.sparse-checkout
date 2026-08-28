@@ -1,0 +1,29 @@
+# Non-cone sparse-checkout for plant / website installs of Houdry Agent (MRPL).
+# Applied only to the managed install tree (git config houdry.thinInstall=true),
+# never to a developer clone of this repo.
+#
+# Include everything, then drop docs/tests/unused plugin trees. Keep
+# plugins/model-providers (Azure + Houdry custom), plugins/web, plugins/browser,
+# skills/, agent/, tools/, apps/ (updater grafts desktop release/).
+/*
+!/website/
+!/tests/
+!/optional-skills/
+!/evals/
+!/mcp-research-data/
+!/nix/
+!/ui-tui/
+!/web/
+!/plugins/platforms/
+!/plugins/memory/
+!/plugins/image_gen/
+!/plugins/kanban/
+!/plugins/spotify/
+!/plugins/google_meet/
+!/plugins/observability/
+!/plugins/hermes-achievements/
+!/plugins/disk-cleanup/
+!/plugins/teams_pipeline/
+!/plugins/cron_providers/
+!/plugins/context_engine/
+!/plugins/video_gen/

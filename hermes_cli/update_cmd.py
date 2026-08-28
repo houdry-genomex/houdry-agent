@@ -37,7 +37,14 @@ from pathlib import Path
 from typing import Optional
 
 from hermes_cli.config import get_hermes_home
-from hermes_constants import venv_python_path
+from hermes_constants import (
+    OFFICIAL_GITHUB_OWNER,
+    OFFICIAL_GITHUB_REPO,
+    OFFICIAL_REPO_URL,
+    OFFICIAL_REPO_URLS,
+    official_github_archive_url,
+    venv_python_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1820,9 +1827,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False) -> boo
         )
         _m().sys.exit(1)
     _abort_zip_update_if_dirty_tree()
-    zip_url = (
-        f"https://github.com/NousResearch/hermes-agent/archive/refs/heads/{branch}.zip"
-    )
+    zip_url = official_github_archive_url(branch=branch)
 
     print("→ Downloading latest version...")
     tmp_dir = tempfile.mkdtemp(prefix="hermes-update-")
@@ -1869,7 +1874,20 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False) -> boo
 
         # Copy updated files over existing installation, preserving venv/node_modules/.git
         preserve = {"venv", "node_modules", ".git", ".env"}
-        entries = [i for i in os.listdir(extracted) if i not in preserve]
+        skip = set(preserve)
+        from hermes_cli.mrpl_thin_install import (
+            apply_thin_checkout,
+            is_thin_install,
+            overlay_skip_names,
+            read_sparse_spec,
+        )
+
+        live_root = Path(_m().PROJECT_ROOT)
+        if is_thin_install(live_root):
+            spec = read_sparse_spec(live_root)
+            if spec:
+                skip |= overlay_skip_names(spec)
+        entries = [i for i in os.listdir(extracted) if i not in skip]
 
         # Two-phase replace (#76104). Phase 1 copies every entry — directories
         # AND top-level files — to a sibling staging path without touching
@@ -1969,6 +1987,10 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False) -> boo
         update_count = len(staged)
 
         print(f"✓ Updated {update_count} items from ZIP")
+        from hermes_cli.mrpl_thin_install import apply_thin_checkout, is_thin_install
+
+        if is_thin_install(Path(_m().PROJECT_ROOT)):
+            apply_thin_checkout(Path(_m().PROJECT_ROOT))
 
     except Exception as e:
         print(f"✗ ZIP update failed: {e}")
@@ -1978,7 +2000,7 @@ def _update_via_zip(args, *, had_desktop_app_before_update: bool = False) -> boo
         print("  Your existing install was left in place.")
         print(
             "  Re-run `hermes update` to retry; if the agent won't start, "
-            "reinstall from https://hermes-agent.nousresearch.com"
+            f"reinstall from {OFFICIAL_REPO_URL.removesuffix('.git')}/releases"
         )
         _m().sys.exit(1)
     finally:
@@ -2558,15 +2580,6 @@ def _discard_stashed_changes(
     print("→ Discarded local source changes (updates.non_interactive_local_changes=discard).")
     return True
 
-OFFICIAL_REPO_URLS = {
-    "https://github.com/NousResearch/hermes-agent.git",
-    "git@github.com:NousResearch/hermes-agent.git",
-    "https://github.com/NousResearch/hermes-agent",
-    "git@github.com:NousResearch/hermes-agent",
-}
-
-OFFICIAL_REPO_URL = "https://github.com/NousResearch/hermes-agent.git"
-
 SKIP_UPSTREAM_PROMPT_FILE = ".skip_upstream_prompt"
 
 def _get_origin_url(git_cmd: list[str], cwd: Path) -> Optional[str]:
@@ -2690,8 +2703,8 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
 
         # Ask user if they want to add upstream
         print()
-        print("ℹ Your fork is not tracking the official Hermes repository.")
-        print("  This means you may miss updates from NousResearch/hermes-agent.")
+        print("ℹ Your fork is not tracking the official Houdry Agent repository.")
+        print(f"  This means you may miss updates from {OFFICIAL_GITHUB_OWNER}/{OFFICIAL_GITHUB_REPO}.")
         print()
         try:
             response = (
@@ -2705,7 +2718,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
             print("→ Adding upstream remote...")
             if _add_upstream_remote(git_cmd, cwd):
                 print(
-                    "  ✓ Added upstream: https://github.com/NousResearch/hermes-agent.git"
+                    f"  ✓ Added upstream: {OFFICIAL_REPO_URL}"
                 )
                 has_upstream = True
             else:
@@ -2713,7 +2726,7 @@ def _sync_with_upstream_if_needed(git_cmd: list[str], cwd: Path) -> None:
                 return
         else:
             print(
-                "  Skipped. Run 'git remote add upstream https://github.com/NousResearch/hermes-agent.git' to add later."
+                f"  Skipped. Run 'git remote add upstream {OFFICIAL_REPO_URL}' to add later."
             )
             _mark_skip_upstream_prompt()
             return
@@ -8229,6 +8242,11 @@ def _cmd_update_impl(args, gateway_mode: bool):
             )
         _m()._record_bytecode_fingerprint()
         _m()._refresh_bootstrap_cache_scripts(branch)
+
+        from hermes_cli.mrpl_thin_install import apply_thin_checkout, is_thin_install
+
+        if is_thin_install(_m().PROJECT_ROOT, git_cmd):
+            apply_thin_checkout(_m().PROJECT_ROOT, git_cmd=git_cmd)
 
         # Fork upstream sync logic (only for main branch on forks)
         if is_fork and branch == "main":

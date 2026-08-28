@@ -20,6 +20,11 @@ source .venv/bin/activate   # or: uv venv && uv pip install -e ".[all]"
 export HERMES_HOME="${HERMES_HOME:-$HOME/.houdry-agent}"
 ```
 
+`.[all]` on this fork is the thin MRPL extra (`pty` + `cron` + `web`). Plant
+installs never clone: they download Desktop from GitHub Releases and the
+first-launch installer pulls the same extra. Developers who need Google /
+MCP / messaging extras install them by name (`uv sync --extra google`).
+
 MRPL skills ship under `skills/mrpl/` and are seeded into `$HERMES_HOME/skills/`
 on install/update (same as other bundled skills). If missing locally:
 

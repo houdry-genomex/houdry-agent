@@ -61,6 +61,11 @@ Publish artifacts to **houdry-genomex/houdry-agent** GitHub Releases. Product
 name / `appId` should be Houdry Agent (`com.houdry.agent`) — see
 `apps/desktop/package.json`.
 
+The installer those artifacts run on first launch clones this repo and
+`uv sync --extra all`. `[all]` is `[mrpl]` (thin plant extra). After extract,
+the install tree is sparse-checked so `website/`, `tests/`, and unused plugins
+are omitted. That thinning does **not** apply to a developer git clone.
+
 ## Smoke checklist
 
 1. Fabric: `houdry version` → 0.6.x; `houdry serve`; `houdry node join`.

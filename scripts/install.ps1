@@ -5,10 +5,13 @@
 # Uses uv for fast Python provisioning and package management.
 #
 # Usage:
-#   iex (irm https://hermes-agent.nousresearch.com/install.ps1)
+#   iex (irm https://raw.githubusercontent.com/houdry-genomex/houdry-agent/main/scripts/install.ps1)
 #
 # Or download and run with options:
 #   .\install.ps1 -NoVenv -SkipSetup
+#
+# Default install is the thin MRPL extra ([all] -> [mrpl]): Azure + Houdry
+# fabric + Desktop serve. Not the upstream Hermes kitchen-sink extras.
 #
 # ============================================================================
 
@@ -30,8 +33,8 @@ param(
     # existing tree pass -ForceCommit.
     [switch]$ForceCommit,
     [string]$Tag = "",
-    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }),
-    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }),
+    [string]$HermesHome = $(if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\houdry-agent" }),
+    [string]$InstallDir = $(if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\houdry-agent\hermes-agent" }),
 
     # --- Stage protocol (additive; default invocation behaves as before) ----
     # See the "Stage protocol" section near the bottom of the file for the
@@ -383,8 +386,10 @@ $script:ResolvedPathReport = @{
 # Configuration
 # ============================================================================
 
-$RepoUrlSsh = "git@github.com:NousResearch/hermes-agent.git"
-$RepoUrlHttps = "https://github.com/NousResearch/hermes-agent.git"
+$RepoOwner = "houdry-genomex"
+$RepoName = "houdry-agent"
+$RepoUrlSsh = "git@github.com:$RepoOwner/$RepoName.git"
+$RepoUrlHttps = "https://github.com/$RepoOwner/$RepoName.git"
 $PythonVersion = "3.11"
 # Minor versions the installer accepts when the requested $PythonVersion isn't
 # available, in preference order.  uv discovers both uv-managed and system
@@ -461,11 +466,43 @@ function Get-WindowsArch {
 function Write-Banner {
     Write-Host ""
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|             * Hermes Agent Installer                    |" -ForegroundColor Magenta
+    Write-Host "|             * Houdry Agent Installer (MRPL)             |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
-    Write-Host "|  An open source AI agent by Nous Research.              |" -ForegroundColor Magenta
+    Write-Host "|  Thin plant install -- Azure + Houdry GPU fabric.       |" -ForegroundColor Magenta
     Write-Host "+---------------------------------------------------------+" -ForegroundColor Magenta
     Write-Host ""
+}
+
+function Apply-MrplThinCheckout {
+    # Drop website/tests/optional-skills/unused plugins from the managed
+    # install tree. git sparse-checkout keeps status clean so hermes update
+    # does not refuse a "dirty" tree. Never run this against a developer clone.
+    $spec = Join-Path $InstallDir "config\mrpl-install.sparse-checkout"
+    if (-not (Test-Path -LiteralPath $spec)) {
+        return
+    }
+    Write-Info "Applying MRPL thin checkout (docs/tests/unused plugins omitted)..."
+    Push-Location $InstallDir
+    try {
+        $prevEAP = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        try {
+            git sparse-checkout init --no-cone 2>$null | Out-Null
+            $sparsePath = git rev-parse --git-path info/sparse-checkout 2>$null
+            if ($LASTEXITCODE -eq 0 -and $sparsePath) {
+                Copy-Item -LiteralPath $spec -Destination $sparsePath -Force
+                git sparse-checkout reapply 2>$null | Out-Null
+                git config houdry.thinInstall true
+                Write-Success "Thin checkout applied"
+            } else {
+                Write-Warn "Could not apply thin checkout (git sparse-checkout unavailable)"
+            }
+        } finally {
+            $ErrorActionPreference = $prevEAP
+        }
+    } finally {
+        Pop-Location
+    }
 }
 
 function Write-Info {
@@ -2281,13 +2318,13 @@ function Install-Repository {
                 # for.  GitHub supports archive URLs for commits, tags, and
                 # branches; we honour Commit > Tag > Branch.
                 if ($Commit) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/$Commit.zip"
+                    $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/$Commit.zip"
                     $zipLabel = $Commit
                 } elseif ($Tag) {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/$Tag.zip"
+                    $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/tags/$Tag.zip"
                     $zipLabel = $Tag
                 } else {
-                    $zipUrl = "https://github.com/NousResearch/hermes-agent/archive/refs/heads/$Branch.zip"
+                    $zipUrl = "https://github.com/$RepoOwner/$RepoName/archive/refs/heads/$Branch.zip"
                     $zipLabel = $Branch
                 }
                 $zipPath = "$env:TEMP\hermes-agent-$zipLabel.zip"
@@ -2410,6 +2447,8 @@ function Install-Repository {
             $ErrorActionPreference = $prevEAP
         }
     }
+
+    Apply-MrplThinCheckout
 
     Write-Success "Repository ready"
 }
