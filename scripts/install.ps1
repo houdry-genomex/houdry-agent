@@ -481,6 +481,20 @@ function Apply-MrplThinCheckout {
     if (-not (Test-Path -LiteralPath $spec)) {
         return
     }
+    # Read the pattern file's content BEFORE touching sparse-checkout.
+    # `git sparse-checkout init --no-cone` writes its own default pattern
+    # (`/*` + `!/*/`, i.e. "root-level files only") and immediately applies
+    # it to the working tree -- deleting every subdirectory, INCLUDING
+    # config/ (which holds mrpl-install.sparse-checkout itself) and
+    # hermes_cli/, before the next line gets a chance to copy our real
+    # patterns in. That silently truncated every fresh install down to
+    # root-level files only (verified: `git sparse-checkout init --no-cone`
+    # on a clean repo strips every subdirectory on the spot), which is why
+    # hermes_cli/web_server.py's downstream syntax check kept failing even
+    # though the clone and the source were both fine -- our own thin-checkout
+    # step was destroying them. Read the spec now and WRITE its content
+    # (never Copy-Item from the now-pruned working tree) after init.
+    $specContent = Get-Content -LiteralPath $spec -Raw
     Write-Info "Applying MRPL thin checkout (docs/tests/unused plugins omitted)..."
     Push-Location $InstallDir
     try {
@@ -489,8 +503,8 @@ function Apply-MrplThinCheckout {
         try {
             git sparse-checkout init --no-cone 2>$null | Out-Null
             $sparsePath = git rev-parse --git-path info/sparse-checkout 2>$null
-            if ($LASTEXITCODE -eq 0 -and $sparsePath) {
-                Copy-Item -LiteralPath $spec -Destination $sparsePath -Force
+            if ($LASTEXITCODE -eq 0 -and $sparsePath -and $specContent) {
+                Set-Content -LiteralPath $sparsePath -Value $specContent -NoNewline
                 git sparse-checkout reapply 2>$null | Out-Null
                 git config houdry.thinInstall true
                 Write-Success "Thin checkout applied"

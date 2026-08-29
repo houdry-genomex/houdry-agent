@@ -59,6 +59,32 @@ def test_unbound_path_defaults_use_houdry_agent_home():
     assert r'else { "$env:LOCALAPPDATA\hermes\hermes-agent" }' not in source
 
 
+def test_mrpl_thin_checkout_reads_spec_before_sparse_checkout_init():
+    """`git sparse-checkout init --no-cone` writes its own default pattern
+    (`/*` + `!/*/`: root-level files only) and applies it immediately --
+    deleting every subdirectory, including config/ (which holds the desired
+    sparse-checkout spec file itself) and hermes_cli/, before the next line
+    can copy the real patterns in. Verified live: `git sparse-checkout init
+    --no-cone` on a clean repo strips every subdirectory on the spot. This
+    silently truncated every fresh install down to root-level files only,
+    which is why hermes_cli/web_server.py's downstream syntax check kept
+    failing on totally healthy clones. The spec's content must be read into
+    memory before `sparse-checkout init` runs, and written (never
+    `Copy-Item`'d from the now-pruned working tree) afterward.
+    """
+    source = _ps1()
+    start = source.index("function Apply-MrplThinCheckout")
+    body = source[start : source.index("function Write-Info")]
+    read_idx = body.index("Get-Content -LiteralPath $spec -Raw")
+    # The explanatory comment above also mentions "git sparse-checkout init
+    # --no-cone" in backticks -- anchor on the actual invocation (with its
+    # redirection) so the comment text doesn't satisfy the ordering check.
+    init_idx = body.index("git sparse-checkout init --no-cone 2>$null")
+    write_idx = body.index("Set-Content -LiteralPath $sparsePath -Value $specContent")
+    assert read_idx < init_idx < write_idx
+    assert "Copy-Item -LiteralPath $spec" not in body
+
+
 def test_existing_checkout_with_foreign_origin_is_not_reused():
     """A pre-existing ~/.hermes (real prior Hermes Agent user, or a leftover
     from an earlier broken attempt) can be a clone of a different repo

@@ -17,12 +17,18 @@ const PLATFORM = process.platform
 // app shell plus extraResources (install-stamp.json + native-deps/) -- it
 // no longer bundles the Hermes Agent Python payload (that's fetched at first
 // launch via install.ps1 / install.sh, per the Phase 1 thin-installer flow).
+// productName/executableName in package.json ("Houdry Agent") is what
+// electron-builder names the packaged binary/bundle as -- these must track
+// that value (previously hardcoded to the pre-rename "Hermes" name, which
+// made every `npm run test:desktop:*` mode fail with "Missing packaged app
+// binary" the moment the build actually produced "Houdry Agent.exe").
+const APP_BINARY_NAME = PACKAGE_JSON.build?.executableName || PACKAGE_JSON.build?.productName || 'Houdry Agent'
 const APP = (() => {
   if (PLATFORM === 'darwin') {
-    const appPath = path.join(RELEASE_ROOT, `mac-${ARCH}`, 'Hermes.app')
+    const appPath = path.join(RELEASE_ROOT, `mac-${ARCH}`, `${APP_BINARY_NAME}.app`)
     return {
       appPath,
-      binary: path.join(appPath, 'Contents', 'MacOS', 'Hermes'),
+      binary: path.join(appPath, 'Contents', 'MacOS', APP_BINARY_NAME),
       resourcesPath: path.join(appPath, 'Contents', 'Resources'),
       asarPath: path.join(appPath, 'Contents', 'Resources', 'app.asar'),
       unpackedDistIndex: path.join(appPath, 'Contents', 'Resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -32,7 +38,7 @@ const APP = (() => {
     const unpacked = path.join(RELEASE_ROOT, 'win-unpacked')
     return {
       appPath: unpacked,
-      binary: path.join(unpacked, 'Hermes.exe'),
+      binary: path.join(unpacked, `${APP_BINARY_NAME}.exe`),
       resourcesPath: path.join(unpacked, 'resources'),
       asarPath: path.join(unpacked, 'resources', 'app.asar'),
       unpackedDistIndex: path.join(unpacked, 'resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -42,7 +48,7 @@ const APP = (() => {
   const unpacked = path.join(RELEASE_ROOT, 'linux-unpacked')
   return {
     appPath: unpacked,
-    binary: path.join(unpacked, 'Hermes'),
+    binary: path.join(unpacked, APP_BINARY_NAME),
     resourcesPath: path.join(unpacked, 'resources'),
     asarPath: path.join(unpacked, 'resources', 'app.asar'),
     unpackedDistIndex: path.join(unpacked, 'resources', 'app.asar.unpacked', 'dist', 'index.html')
@@ -50,14 +56,14 @@ const APP = (() => {
 })()
 
 // Default HERMES_HOME for non-sandboxed runs -- matches main.ts's
-// resolveHermesHome(). On Windows it's %LOCALAPPDATA%\hermes; elsewhere
-// it's ~/.hermes. The fresh-install sandbox launchFresh() sets its own
+// resolveHermesHome(). On Windows it's %LOCALAPPDATA%\houdry-agent; elsewhere
+// it's ~/.houdry-agent. The fresh-install sandbox launchFresh() sets its own
 // HERMES_HOME and never touches this.
 const DEFAULT_HERMES_HOME = (() => {
   if (PLATFORM === 'win32' && process.env.LOCALAPPDATA) {
-    return path.join(process.env.LOCALAPPDATA, 'hermes')
+    return path.join(process.env.LOCALAPPDATA, 'houdry-agent')
   }
-  return path.join(os.homedir(), '.hermes')
+  return path.join(os.homedir(), '.houdry-agent')
 })()
 const VENV_ROOT = path.join(DEFAULT_HERMES_HOME, 'hermes-agent', 'venv')
 const FRESH_SANDBOX_ROOT = path.join(os.tmpdir(), 'hermes-desktop-fresh-install')
@@ -122,12 +128,23 @@ function ensurePackagedApp() {
   run('npm', ['run', 'pack'])
 }
 
+// package.json's build.artifactName template is 'Houdry-Agent-${version}-${os}-${arch}.${ext}'.
+// Derive the filename prefix from it (up to the first '${') instead of
+// hardcoding the pre-rename "Hermes-" name so this keeps tracking whatever
+// artifactName actually is.
+const ARTIFACT_PREFIX = (() => {
+  const template = PACKAGE_JSON.build?.artifactName || 'Hermes-${version}-${os}-${arch}.${ext}'
+  const idx = template.indexOf('${')
+  return idx >= 0 ? template.slice(0, idx) : template
+})()
+
 function resolveDmgPath() {
+  const fallback = path.join(RELEASE_ROOT, `${ARTIFACT_PREFIX}${PACKAGE_JSON.version}-${ARCH}.dmg`)
   if (!exists(RELEASE_ROOT)) {
-    return path.join(RELEASE_ROOT, `Hermes-${PACKAGE_JSON.version}-${ARCH}.dmg`)
+    return fallback
   }
 
-  const prefix = `Hermes-${PACKAGE_JSON.version}`
+  const prefix = `${ARTIFACT_PREFIX}${PACKAGE_JSON.version}`
   const candidates = fs
     .readdirSync(RELEASE_ROOT)
     .filter(name => name.endsWith('.dmg'))
@@ -139,13 +156,11 @@ function resolveDmgPath() {
       return bMtime - aMtime
     })
 
-  return candidates.length > 0
-    ? path.join(RELEASE_ROOT, candidates[0])
-    : path.join(RELEASE_ROOT, `Hermes-${PACKAGE_JSON.version}-${ARCH}.dmg`)
+  return candidates.length > 0 ? path.join(RELEASE_ROOT, candidates[0]) : fallback
 }
 
 function resolveNsisPath() {
-  // electron-builder NSIS artifactName template is 'Hermes-${version}-${os}-${arch}.${ext}'
+  // electron-builder NSIS artifactName template: see ARTIFACT_PREFIX above.
   if (!exists(RELEASE_ROOT)) return null
   const candidates = fs
     .readdirSync(RELEASE_ROOT)
