@@ -59,6 +59,23 @@ def test_unbound_path_defaults_use_houdry_agent_home():
     assert r'else { "$env:LOCALAPPDATA\hermes\hermes-agent" }' not in source
 
 
+def test_existing_checkout_with_foreign_origin_is_not_reused():
+    """A pre-existing ~/.hermes (real prior Hermes Agent user, or a leftover
+    from an earlier broken attempt) can be a clone of a different repo
+    entirely. install.ps1's "update in place" path must not fetch/checkout
+    against a foreign origin -- it should treat the checkout as invalid and
+    fall through to a fresh clone of houdry-genomex/houdry-agent, same as any
+    other broken repo.
+    """
+    source = _ps1()
+    start = source.index("function Install-Repository")
+    body = source[start : source.index("if (-not $didUpdate)")]
+    assert "git -c windows.appendAtomically=false remote get-url origin" in body
+    assert '[regex]::Escape("$RepoOwner/$RepoName")' in body
+    assert "$originOk" in body
+    assert "$revParseOk -and $statusOk -and $hasCommit -and $originOk" in body
+
+
 def test_web_server_syntax_check_self_heals_before_failing_bootstrap():
     """A truncated/corrupted checkout of hermes_cli/web_server.py (Windows AV
     or OneDrive interfering with git's file write during checkout) used to

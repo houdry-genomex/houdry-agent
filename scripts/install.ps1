@@ -2066,10 +2066,11 @@ function Install-Repository {
         # directory OR a symlink OR a submodule-style gitfile -- and also when
         # it's a broken stub left over from a failed previous install (e.g.
         # a partial Remove-Item that couldn't delete a locked index.lock).
-        # Validate the repo properly by asking git itself.  Three checks
-        # belt-and-braces: rev-parse (work tree), git status, and a resolvable
-        # HEAD (an initial commit).  If any fails the repo is broken and we
-        # fall through to a fresh clone.
+        # Validate the repo properly by asking git itself.  Four checks
+        # belt-and-braces: rev-parse (work tree), git status, a resolvable
+        # HEAD (an initial commit), and that "origin" actually points at
+        # this fork.  If any fails the repo is broken/foreign and we fall
+        # through to a fresh clone.
         $repoValid = $false
         if (Test-Path "$InstallDir\.git") {
             Push-Location $InstallDir
@@ -2094,8 +2095,29 @@ function Install-Repository {
                 $null = & git -c windows.appendAtomically=false rev-parse --verify HEAD 2>&1
                 $hasCommit = ($LASTEXITCODE -eq 0)
 
-                if ($revParseOk -and $statusOk -and $hasCommit) {
+                # $InstallDir can be a genuine LEGACY checkout: the desktop
+                # app's HERMES_HOME migration (apps/desktop/electron/main.ts
+                # resolveHermesHome) deliberately reuses a pre-existing
+                # ~/.hermes so it doesn't orphan a real prior Hermes Agent
+                # user's sessions/config. But if that directory is a git
+                # clone of a DIFFERENT repo (upstream hermes-agent, a fork,
+                # or an old/unrelated checkout), fetching/checking out
+                # $Branch against its "origin" pulls in source that was never
+                # meant to sit next to Houdry's config/sparse-checkout files
+                # -- producing exactly the kind of inconsistent tree that
+                # fails downstream sanity checks (e.g. the web_server.py
+                # syntax gate in Install-Dependencies), and no amount of
+                # single-file self-heal fixes that. Treat a mismatched origin
+                # the same as a broken repo: back it up and clone fresh.
+                $global:LASTEXITCODE = 0
+                $originUrl = ((& git -c windows.appendAtomically=false remote get-url origin 2>&1) -join "`n")
+                $originOk = ($LASTEXITCODE -eq 0) -and ($originUrl -match [regex]::Escape("$RepoOwner/$RepoName"))
+
+                if ($revParseOk -and $statusOk -and $hasCommit -and $originOk) {
                     $repoValid = $true
+                } elseif ($revParseOk -and $statusOk -and $hasCommit -and -not $originOk) {
+                    Write-Warn "Existing checkout at $InstallDir tracks a different repository (origin: $originUrl)."
+                    Write-Warn "Treating it as a foreign/legacy install and re-cloning $RepoOwner/$RepoName fresh."
                 }
             } catch {}
             Pop-Location
