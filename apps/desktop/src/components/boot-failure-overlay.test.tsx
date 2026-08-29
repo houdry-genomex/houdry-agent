@@ -65,6 +65,23 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('BootFailureOverlay', () => {
+  it('stays hidden for latched bootstrap install failures', () => {
+    $desktopBoot.set({
+      error: "Hermes bootstrap failed at stage 'dependencies': syntax check",
+      fakeMode: false,
+      message: 'boot failed',
+      phase: 'renderer.error',
+      progress: 40,
+      running: false,
+      timestamp: Date.now(),
+      visible: true
+    })
+
+    const { container } = render(<BootFailureOverlay />)
+
+    expect(container.firstChild).toBeNull()
+  })
+
   it('swaps to the in-place gateway settings view (no route nav) and back', async () => {
     render(<BootFailureOverlay />)
 

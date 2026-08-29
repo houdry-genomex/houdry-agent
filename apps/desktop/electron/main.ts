@@ -78,6 +78,7 @@ import {
   resolveLinuxPasswordStore
 } from './bootstrap-platform'
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
+import { isBootstrapInstallPending as checkBootstrapInstallPending } from './bootstrap-install-pending'
 import { runBootstrap } from './bootstrap-runner'
 import {
   BROWSER_WINDOW_HEIGHT,
@@ -1987,6 +1988,13 @@ function broadcastBootstrapEvent(ev) {
 
 function getBootstrapState() {
   return bootstrapState
+}
+
+function bootstrapInstallPending() {
+  return checkBootstrapInstallPending({
+    bootstrapActive: bootstrapState.active,
+    runtimeUsable: isActiveRuntimeUsable()
+  })
 }
 
 function resetBootstrapSnapshot() {
@@ -14603,6 +14611,7 @@ ipcMain.handle('hermes:bootstrap:cancel', async () => {
 })
 ipcMain.handle('hermes:boot-progress:get', async () => bootProgressState)
 ipcMain.handle('hermes:bootstrap:get', async () => getBootstrapState())
+ipcMain.handle('hermes:bootstrap:install-pending', async () => bootstrapInstallPending())
 ipcMain.handle('hermes:connection-config:get', async (_event, profile) =>
   sanitizeDesktopConnectionConfig(readDesktopConnectionConfig(), profile)
 )

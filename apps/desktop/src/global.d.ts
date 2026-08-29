@@ -470,6 +470,7 @@ declare global {
       onBatteryChanged?: (callback: (onBattery: boolean) => void) => () => void
       onBootProgress: (callback: (payload: DesktopBootProgress) => void) => () => void
       getBootstrapState: () => Promise<DesktopBootstrapState>
+      isBootstrapInstallPending: () => Promise<boolean>
       continueBootstrapLocal: () => Promise<{ ok: boolean }>
       resetBootstrap: () => Promise<{ ok: boolean }>
       repairBootstrap: () => Promise<{ ok: boolean }>
