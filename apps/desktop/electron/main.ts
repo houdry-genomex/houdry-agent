@@ -183,7 +183,7 @@ import {
   performFindAfterIndexingStarted,
   stopFind
 } from './find-in-page'
-import { createFirstRunSetupGate } from './first-run-setup-gate'
+import { createFirstRunSetupGate, shouldAutoStartLocalBootstrap } from './first-run-setup-gate'
 import { createNodeSeedMrplHomeFs, resolveMrplTemplateDir, seedMrplDesktopHome } from './seed-mrpl-home'
 import { registerFsIpc } from './fs-ipc'
 import {
@@ -2044,6 +2044,14 @@ function getFirstRunSetupGate() {
 
 async function waitForFirstRunSetupChoice(backend) {
   const gate = getFirstRunSetupGate()
+
+  // Packaged Houdry Agent installs locally. Plant users should not have to
+  // pick local install vs a remote gateway -- that screen is how
+  // first-run sat idle for tens of minutes. Remote backends stay in Settings.
+  if (shouldAutoStartLocalBootstrap(IS_PACKAGED)) {
+    rememberLog('[bootstrap] packaged install; starting local setup without a first-run picker')
+    gate.continueLocal()
+  }
 
   if (!gate.shouldGate(backend)) {
     return 'continue-local'

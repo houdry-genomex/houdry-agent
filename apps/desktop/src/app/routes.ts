@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 
 import { noteActiveTreeGroup, revealTreePane } from '@/components/pane-shell/tree/store'
 import { registry } from '@/contrib/registry'
+import { isHoudryHiddenWorkspacePath } from '@/lib/houdry-desktop-surface'
 
 type NavigateLike = (to: string, options?: { replace?: boolean }) => void
 
@@ -255,9 +256,11 @@ export function syncWorkspaceRoute(pathname: string): void {
  * be triggered from the page it targets.
  */
 export function navigateToWorkspacePage(navigate: NavigateLike, to: string, options?: { replace?: boolean }): void {
-  navigate(to, options)
+  const dest = isHoudryHiddenWorkspacePath(to) ? NEW_CHAT_ROUTE : to
 
-  if (isWorkspacePageRoute(to)) {
+  navigate(dest, options)
+
+  if (isWorkspacePageRoute(dest)) {
     revealWorkspacePane()
   }
 }

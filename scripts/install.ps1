@@ -348,14 +348,14 @@ if ($PSBoundParameters.ContainsKey('HermesHome')) {
     $HermesHome = ConvertTo-LongPath $HermesHome
 } else {
     $HermesHome = ConvertTo-LongPath $(
-        if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\hermes" }
+        if ($env:HERMES_HOME) { $env:HERMES_HOME } else { "$env:LOCALAPPDATA\houdry-agent" }
     )
 }
 if ($PSBoundParameters.ContainsKey('InstallDir')) {
     $InstallDir = ConvertTo-LongPath $InstallDir
 } else {
     $InstallDir = ConvertTo-LongPath $(
-        if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\hermes\hermes-agent" }
+        if ($env:HERMES_HOME) { "$env:HERMES_HOME\hermes-agent" } else { "$env:LOCALAPPDATA\houdry-agent\hermes-agent" }
     )
 }
 if ($script:NormalizedProfilePaths) {
@@ -1784,6 +1784,14 @@ function Test-Node {
     # the taskbar -- looks like a hang to users on stock Windows).
     # Kept for environments where the portable download fails (proxy,
     # locked firewall, etc.) but the user is willing to consent to UAC.
+    # Desktop bootstrap is -NonInteractive: that UAC dialog hides behind
+    # Electron, so skip winget here and fail with a clear next step.
+    if ($NonInteractive) {
+        Write-Warn "Skipping winget Node.js install in non-interactive mode (UAC can hang behind the app)."
+        Write-Info "Install Node.js LTS from https://nodejs.org and retry, or allow the portable download to reach nodejs.org."
+        return $false
+    }
+
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         Write-Info "Falling back to winget (may prompt UAC -- check your taskbar for a flashing icon)..."
         # Capture EAP outside the try block so the catch's restore call always
@@ -1888,6 +1896,22 @@ function Install-SystemPackages {
     }
 
     if (-not $needRipgrep -and -not $needFfmpeg) { return }
+
+    # Desktop bootstrap always passes -NonInteractive. winget install of
+    # optional packages (ripgrep, ffmpeg) has no timeout and commonly hangs
+    # on a UAC prompt hidden behind the Electron window. Chat does not need
+    # either tool -- skip them here; interactive CLI installs still try.
+    if ($NonInteractive) {
+        Write-Warn "Skipping optional ripgrep/ffmpeg install in non-interactive mode (winget can hang on UAC)."
+        if ($needRipgrep) {
+            Write-Info "File search will use a slower fallback until: winget install BurntSushi.ripgrep.MSVC"
+        }
+        if ($needFfmpeg) {
+            Write-Info "TTS voice is optional. Install later: winget install Gyan.FFmpeg"
+        }
+        $script:_StageSkippedReason = "optional system packages skipped in non-interactive install"
+        return
+    }
 
     # Build description and package lists for each package manager
     $descParts = @()
@@ -3223,7 +3247,7 @@ function Write-BootstrapMarker {
 function Copy-ConfigTemplates {
     Write-Info "Setting up configuration files..."
     
-    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\hermes)
+    # Create the HERMES_HOME directory structure ($HermesHome, default %LOCALAPPDATA%\houdry-agent)
     New-Item -ItemType Directory -Force -Path "$HermesHome\cron" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\sessions" | Out-Null
     New-Item -ItemType Directory -Force -Path "$HermesHome\logs" | Out-Null
@@ -3250,11 +3274,17 @@ function Copy-ConfigTemplates {
         Write-Info "$envPath already exists, keeping it"
     }
     
-    # Create config.yaml
+    # Create config.yaml. Prefer the Houdry/MRPL desktop seed (Azure Luna)
+    # over the upstream cli-config example, which still points at third-party
+    # Hermes vendors a plant user cannot use.
     $configPath = "$HermesHome\config.yaml"
     if (-not (Test-Path $configPath)) {
+        $mrplPath = "$InstallDir\config\mrpl-desktop.defaults.yaml"
         $examplePath = "$InstallDir\cli-config.yaml.example"
-        if (Test-Path $examplePath) {
+        if (Test-Path $mrplPath) {
+            Copy-Item $mrplPath $configPath
+            Write-Success "Created $configPath from Houdry desktop defaults"
+        } elseif (Test-Path $examplePath) {
             Copy-Item $examplePath $configPath
             Write-Success "Created $configPath from template"
         }
@@ -4620,8 +4650,8 @@ $InstallStages = @(
     @{ Name = "python";           Title = "Verifying Python $PythonVersion";      Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Python" }
     @{ Name = "git";              Title = "Installing Git";                       Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Git" }
     @{ Name = "node";             Title = "Detecting Node.js";                    Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-Node" }
-    @{ Name = "system-packages";  Title = "Installing ripgrep and ffmpeg";        Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
-    @{ Name = "repository";       Title = "Cloning Hermes repository";            Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
+    @{ Name = "system-packages";  Title = "Checking optional search tools";       Category = "prereqs";      NeedsUserInput = $false; Worker = "Stage-SystemPackages" }
+    @{ Name = "repository";       Title = "Cloning Houdry Agent";                  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Repository" }
     @{ Name = "venv";             Title = "Creating Python virtual environment";  Category = "install";      NeedsUserInput = $false; Worker = "Stage-Venv" }
     @{ Name = "dependencies";     Title = "Installing Python dependencies";       Category = "install";      NeedsUserInput = $false; Worker = "Stage-Dependencies" }
     @{ Name = "node-deps";        Title = "Installing Node.js dependencies";      Category = "install";      NeedsUserInput = $false; Worker = "Stage-NodeDeps" }
@@ -4633,7 +4663,7 @@ if ($IncludeDesktop) {
     $InstallStages += @{ Name = "desktop"; Title = "Building desktop app"; Category = "install"; NeedsUserInput = $false; Worker = "Stage-Desktop" }
 }
 $InstallStages += @(
-    @{ Name = "path";             Title = "Adding Hermes to PATH";                Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
+    @{ Name = "path";             Title = "Adding Houdry Agent to PATH";           Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-Path" }
     @{ Name = "config-templates"; Title = "Writing configuration templates";      Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-ConfigTemplates" }
     @{ Name = "platform-sdks";    Title = "Installing messaging platform SDKs";   Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-PlatformSdks" }
     @{ Name = "bootstrap-marker"; Title = "Marking install complete";              Category = "finalize";     NeedsUserInput = $false; Worker = "Stage-BootstrapMarker" }

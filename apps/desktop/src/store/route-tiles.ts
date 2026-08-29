@@ -1,5 +1,6 @@
 import { atom } from 'nanostores'
 
+import { isHoudryHiddenWorkspacePath } from '@/lib/houdry-desktop-surface'
 import { readJson, writeJson } from '@/lib/storage'
 
 import type { SplitDir } from './session-states'
@@ -23,7 +24,10 @@ function loadTiles(): RouteTile[] {
 
   return Array.isArray(parsed)
     ? parsed
-        .filter((t): t is RouteTile => Boolean(t && typeof (t as RouteTile).path === 'string'))
+        .filter(
+          (t): t is RouteTile =>
+            Boolean(t && typeof (t as RouteTile).path === 'string') && !isHoudryHiddenWorkspacePath((t as RouteTile).path)
+        )
         .map(t => ({ dir: t.dir, path: t.path }))
     : []
 }
@@ -38,6 +42,10 @@ function saveTiles(tiles: RouteTile[]) {
 /** Open (or front) a page tile for a route, docked on `dir` (default right).
  *  Idempotent — an already-open tile keeps its original edge. */
 export function openRouteTile(path: string, dir: SplitDir = 'right') {
+  if (isHoudryHiddenWorkspacePath(path)) {
+    return
+  }
+
   const tiles = $routeTiles.get()
 
   if (!tiles.some(t => t.path === path)) {

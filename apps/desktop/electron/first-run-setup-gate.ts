@@ -14,6 +14,12 @@ interface FirstRunSetupGateOptions {
 
 export type FirstRunSetupDecision = 'continue-local' | 'remote-applied' | 'reset'
 
+/** Packaged Desktop always installs the local runtime. Dev `npm run dev` still
+ *  shows the local-vs-remote picker so engineers can attach to a gateway. */
+export function shouldAutoStartLocalBootstrap(isPackaged: boolean): boolean {
+  return isPackaged
+}
+
 export function createFirstRunSetupGate({
   hideChoice,
   log,

@@ -116,7 +116,7 @@ describe('syncWorkspaceRoute', () => {
     vi.mocked(revealTreePane).mockClear()
     vi.mocked(noteActiveTreeGroup).mockClear()
 
-    syncWorkspaceRoute(MESSAGING_ROUTE)
+    syncWorkspaceRoute(SKILLS_ROUTE)
 
     expect($workspaceIsPage.get()).toBe(true)
     expect(fronted()).toBe(true)
@@ -175,6 +175,15 @@ describe('navigateToWorkspacePage', () => {
     navigateToWorkspacePage(navigate, ARTIFACTS_ROUTE, { replace: true })
 
     expect(navigate).toHaveBeenCalledWith(ARTIFACTS_ROUTE, { replace: true })
+  })
+
+  it('sends hidden Messaging chrome to new chat instead of opening the page', () => {
+    const navigate = vi.fn()
+
+    navigateToWorkspacePage(navigate, MESSAGING_ROUTE)
+
+    expect(navigate).toHaveBeenCalledWith(NEW_CHAT_ROUTE, undefined)
+    expect(revealTreePane).not.toHaveBeenCalled()
   })
 
   it('navigates without fronting for chat and overlay targets', () => {

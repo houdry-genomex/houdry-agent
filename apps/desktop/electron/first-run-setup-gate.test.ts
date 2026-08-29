@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 
 import { test } from 'vitest'
 
-import { createFirstRunSetupGate } from './first-run-setup-gate'
+import { createFirstRunSetupGate, shouldAutoStartLocalBootstrap } from './first-run-setup-gate'
 
 const bootstrapBackend = {
   activeRoot: '/tmp/hermes-home/hermes-agent',
@@ -17,6 +17,11 @@ function delay(ms: number) {
 async function settledState(promise: Promise<unknown>) {
   return Promise.race([promise.then(() => 'resolved'), delay(10).then(() => 'pending')])
 }
+
+test('packaged Desktop auto-starts local bootstrap', () => {
+  assert.equal(shouldAutoStartLocalBootstrap(true), true)
+  assert.equal(shouldAutoStartLocalBootstrap(false), false)
+})
 
 test('first-run setup gate skips non-bootstrap backends', async () => {
   const prompts = []
