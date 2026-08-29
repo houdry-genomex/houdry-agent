@@ -57,3 +57,20 @@ def test_unbound_path_defaults_use_houdry_agent_home():
     assert r"$env:LOCALAPPDATA\houdry-agent\hermes-agent" in source
     assert r'else { "$env:LOCALAPPDATA\hermes" }' not in source
     assert r'else { "$env:LOCALAPPDATA\hermes\hermes-agent" }' not in source
+
+
+def test_web_server_syntax_check_self_heals_before_failing_bootstrap():
+    """A truncated/corrupted checkout of hermes_cli/web_server.py (Windows AV
+    or OneDrive interfering with git's file write during checkout) used to
+    fail the whole "dependencies" bootstrap stage immediately. Restore the
+    single file from git and re-check before giving up.
+    """
+    source = _ps1()
+    start = source.index("function Install-Dependencies")
+    body = source[start : source.index("function Install-HermesCommandLaunchers")]
+    assert 'throw "dashboard backend source failed syntax check: hermes_cli/web_server.py' in body
+    assert "git -c windows.appendAtomically=false checkout -- hermes_cli/web_server.py" in body
+    # The self-heal restore + re-check must happen before the final throw.
+    restore_idx = body.index("checkout -- hermes_cli/web_server.py")
+    throw_idx = body.index('throw "dashboard backend source failed syntax check')
+    assert restore_idx < throw_idx

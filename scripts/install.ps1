@@ -3040,7 +3040,39 @@ print(','.join(scripts))
             }
         }
         if (-not $webServerSyntaxOk) {
-            throw "dashboard backend source failed syntax check: hermes_cli/web_server.py"
+            # A syntax error in a file that is fine on `main` (verified in CI)
+            # almost always means the on-disk copy is truncated/corrupted, not
+            # that the checked-out source is actually broken -- Git for Windows
+            # can silently produce a short write during checkout when an AV
+            # scanner, OneDrive, or another filter driver holds the file open
+            # mid-write (the same class of Windows file-I/O flakiness already
+            # worked around elsewhere in this script, e.g. `copy-fd: write
+            # returned: Invalid argument`). Self-heal by re-materializing the
+            # single file from git's object store and re-checking before
+            # giving up -- much cheaper than failing the whole bootstrap and
+            # asking the user to Repair Install from scratch.
+            if (Test-Path "$InstallDir\.git") {
+                Write-Warn "hermes_cli/web_server.py failed a syntax check -- likely a truncated/corrupted checkout."
+                Write-Info "Attempting to restore the file from git before failing..."
+                $prevEAP = $ErrorActionPreference
+                $ErrorActionPreference = "Continue"
+                git -c windows.appendAtomically=false checkout -- hermes_cli/web_server.py 2>&1 | Out-Null
+                $restoreExit = $LASTEXITCODE
+                $ErrorActionPreference = $prevEAP
+                if ($restoreExit -eq 0) {
+                    $prevEAP = $ErrorActionPreference
+                    $ErrorActionPreference = "Continue"
+                    & $pythonExe -m py_compile "$InstallDir\hermes_cli\web_server.py" 2>&1 | Out-Null
+                    if ($LASTEXITCODE -eq 0) { $webServerSyntaxOk = $true }
+                    $ErrorActionPreference = $prevEAP
+                    if ($webServerSyntaxOk) {
+                        Write-Success "Restored a clean copy of hermes_cli/web_server.py from git"
+                    }
+                }
+            }
+        }
+        if (-not $webServerSyntaxOk) {
+            throw "dashboard backend source failed syntax check: hermes_cli/web_server.py (the on-disk file is likely truncated -- an antivirus scanner or OneDrive/cloud-sync client may be interfering with git's checkout; try excluding $InstallDir from real-time scanning/sync and use Repair Install)"
         }
     }
     
