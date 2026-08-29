@@ -54,7 +54,20 @@ function tryExec(cmd, opts) {
 export function fromCI(env = process.env) {
   const sha = env.GITHUB_SHA
   if (!sha) return null
-  const branch = env.GITHUB_REF_NAME || env.GITHUB_HEAD_REF || null
+  // GITHUB_REF_NAME is the tag name on a tag-triggered build (our desktop
+  // release workflow builds on `push: tags: - "v*"`), not a branch. Passing
+  // a tag name through as the bootstrap "branch" pin makes install.ps1 run
+  // `git fetch origin v0.17.1` + a bare `git checkout v0.17.1`, which fails
+  // (exit 1) on both fresh and existing checkouts: a plain `fetch origin
+  // <ref>` never creates a local branch or tag ref by that name for a bare
+  // `checkout` to resolve. Only trust GITHUB_REF_NAME as a branch when
+  // GITHUB_REF confirms it actually came from refs/heads/ (or this is a PR,
+  // where GITHUB_HEAD_REF is always a real branch). Tag builds fall back to
+  // no branch pin -- install.ps1's own default ("main") tracks forward from
+  // there, which is what an update path (pinCommit=false) wants anyway.
+  const ref = env.GITHUB_REF || ""
+  const isTagRef = ref.startsWith("refs/tags/")
+  const branch = env.GITHUB_HEAD_REF || (!isTagRef ? env.GITHUB_REF_NAME : null) || null
   return {
     commit: sha,
     branch: branch,

@@ -11,12 +11,44 @@ import {
   resolveStamp
 } from './write-build-stamp.mjs'
 
-test('fromCI reads GITHUB_SHA / GITHUB_REF_NAME', () => {
+test('fromCI reads GITHUB_SHA / GITHUB_REF_NAME for a branch build', () => {
   assert.deepEqual(
-    fromCI({ GITHUB_SHA: 'a'.repeat(40), GITHUB_REF_NAME: 'release' }),
+    fromCI({
+      GITHUB_SHA: 'a'.repeat(40),
+      GITHUB_REF: 'refs/heads/release',
+      GITHUB_REF_NAME: 'release'
+    }),
     { commit: 'a'.repeat(40), branch: 'release', dirty: false, source: 'ci' }
   )
   assert.equal(fromCI({}), null)
+})
+
+test('fromCI does not treat a release tag as a branch (#desktop-bootstrap-checkout-fail)', () => {
+  // The desktop release workflow builds on `push: tags: - "v*"`.  There,
+  // GITHUB_REF_NAME is the tag ("v0.17.1"), not a branch -- passing it
+  // through as the install.ps1 branch pin makes bootstrap run a bare
+  // `git checkout v0.17.1`, which fails on every install (no local branch
+  // or tag ref exists under that name after a plain `fetch origin <ref>`).
+  assert.deepEqual(
+    fromCI({
+      GITHUB_SHA: 'a'.repeat(40),
+      GITHUB_REF: 'refs/tags/v0.17.1',
+      GITHUB_REF_NAME: 'v0.17.1'
+    }),
+    { commit: 'a'.repeat(40), branch: null, dirty: false, source: 'ci' }
+  )
+})
+
+test('fromCI prefers GITHUB_HEAD_REF (a real branch) for pull-request builds', () => {
+  assert.deepEqual(
+    fromCI({
+      GITHUB_SHA: 'a'.repeat(40),
+      GITHUB_REF: 'refs/pull/123/merge',
+      GITHUB_REF_NAME: '123/merge',
+      GITHUB_HEAD_REF: 'my-feature-branch'
+    }),
+    { commit: 'a'.repeat(40), branch: 'my-feature-branch', dirty: false, source: 'ci' }
+  )
 })
 
 test('fromLocalGit returns null when git rev-parse fails', () => {
