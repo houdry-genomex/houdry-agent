@@ -26,6 +26,24 @@ def test_official_repo_is_houdry_fork():
     )
 
 
+def parse_nested_excludes(spec: str) -> frozenset[str]:
+    """All ``!/path/`` exclude lines in a non-cone sparse-checkout spec."""
+    names: set[str] = set()
+    for raw in spec.splitlines():
+        line = raw.strip()
+        if line.startswith("!/"):
+            names.add(line)
+    return frozenset(names)
+
+
+def test_sparse_spec_keeps_plugins_memory_for_serve():
+    """serve/dashboard imports plugins.memory.config_schema at module load."""
+    spec = (REPO_ROOT / "config" / "mrpl-install.sparse-checkout").read_text(
+        encoding="utf-8"
+    )
+    assert "!/plugins/memory/" not in parse_nested_excludes(spec)
+
+
 def test_sparse_spec_omits_docs_tests_and_keeps_plugins_root():
     spec = (REPO_ROOT / "config" / "mrpl-install.sparse-checkout").read_text(
         encoding="utf-8"

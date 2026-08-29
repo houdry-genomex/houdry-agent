@@ -1347,6 +1347,12 @@ apply_mrpl_thin_checkout() {
     if [ ! -f "$spec" ]; then
         return 0
     fi
+    # Read the pattern file BEFORE touching sparse-checkout. `git sparse-checkout
+    # init --no-cone` writes a default "root files only" pattern and applies it
+    # immediately -- deleting every subdirectory (including config/ and
+    # hermes_cli/) before the next line can copy the real spec in.
+    local spec_content
+    spec_content="$(cat "$spec")"
     log_info "Applying MRPL thin checkout (docs/tests/unused plugins omitted)..."
     (
         cd "$INSTALL_DIR" || exit 0
@@ -1355,7 +1361,7 @@ apply_mrpl_thin_checkout() {
         if [ -z "$sparse_path" ]; then
             exit 0
         fi
-        cp "$spec" "$sparse_path"
+        printf '%s' "$spec_content" >"$sparse_path"
         git sparse-checkout reapply >/dev/null 2>&1 || true
         git config houdry.thinInstall true
     )

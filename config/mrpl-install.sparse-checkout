@@ -3,8 +3,10 @@
 # never to a developer clone of this repo.
 #
 # Include everything, then drop docs/tests/unused plugin trees. Keep
-# plugins/model-providers (Azure + Houdry custom), plugins/web, plugins/browser,
-# skills/, agent/, tools/, apps/ (updater grafts desktop release/).
+# plugins/model-providers (Azure + Houdry custom), plugins/memory (serve/
+# dashboard imports plugins.memory.config_schema at startup), plugins/web,
+# plugins/browser, skills/, agent/, tools/, apps/ (updater grafts desktop
+# release/).
 /*
 !/website/
 !/tests/
@@ -15,7 +17,6 @@
 !/ui-tui/
 !/web/
 !/plugins/platforms/
-!/plugins/memory/
 !/plugins/image_gen/
 !/plugins/kanban/
 !/plugins/spotify/
