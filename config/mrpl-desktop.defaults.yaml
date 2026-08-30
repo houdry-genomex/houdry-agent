@@ -2,13 +2,18 @@
 # Copied into $HERMES_HOME/config.yaml only when that file is missing.
 # Windows default home: %LOCALAPPDATA%\houdry-agent
 #
-# Azure GPT-5.6 Luna = DEV inference. Switch to Houdry fabric for PROD
-# (see config/houdry-fabric.defaults.yaml and docs/HOUDRY.md).
+# Houdry fabric = default inference: fully on-premise, GPU-local, no data
+# leaves the machine. Azure GPT-5.6 Luna stays available as the alternate
+# provider for cloud-backed work (see config/azure-openai.defaults.yaml).
 # Secrets stay in $HERMES_HOME/.env — never in this file.
 
 model:
-  provider: azure # alias of azure-foundry
-  default: "gpt-5.6-luna"
+  # Alias of `custom`. With no base_url, this resolves to $HOUDRY_BASE_URL or
+  # http://127.0.0.1:18080/v1 — the fabric's OpenAI-compatible surface.
+  provider: houdry
+  # "auto" hands model choice to the fabric's router, which sizes the model to
+  # the request. Pinning a specific model here would bypass that.
+  default: "auto"
   api_mode: chat_completions
 
 approvals:

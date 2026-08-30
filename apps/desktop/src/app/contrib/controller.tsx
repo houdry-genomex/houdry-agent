@@ -7,6 +7,7 @@ import { SessionStatusDot } from '@/app/chat/session-status-dot'
 import { PALETTE_AREA, type PaletteContribution, paletteToggle } from '@/app/command-palette/contrib'
 import { type StatusbarItem } from '@/app/shell/statusbar-controls'
 import { InlinePreviewDirective } from '@/components/assistant-ui/inline-preview-directive'
+import { localArtifactUrl, Model3DViewer } from '@/components/chat/model3d-viewer'
 import { IdleMount } from '@/components/idle-mount'
 import { $layoutEditMode, toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { allPaneIds, group, groupLeafIds, split } from '@/components/pane-shell/tree/model'
@@ -302,6 +303,36 @@ registry.registerMany([
     data: {
       name: 'preview',
       render: ({ attrs, streaming }) => <InlinePreviewDirective attrs={attrs} streaming={streaming} />
+    } satisfies TranscriptDirectiveContribution
+  },
+  // `::model3d{...}` — the Houdry fabric emits this after a drawing → STEP
+  // run, so the generated part renders and can be orbited inline in the
+  // message instead of only being downloadable.
+  {
+    id: 'transcript.model3d',
+    area: TRANSCRIPT_DIRECTIVE_AREA,
+    data: {
+      name: 'model3d',
+      // Attributes are untrusted model output, so the URLs are constrained to
+      // the loopback/localhost fabric that produced them: a directive is just
+      // text, and an unconstrained href would let any model that learned the
+      // name point the preview at an arbitrary host.
+      render: ({ attrs }) => {
+        const url = localArtifactUrl(attrs.url)
+
+        if (!url) {
+          return null
+        }
+
+        return (
+          <Model3DViewer
+            name={attrs.name?.slice(0, 120) || 'model.step'}
+            previewUrl={localArtifactUrl(attrs.preview)}
+            sizeBytes={Number.parseInt(attrs.size ?? '', 10) || 0}
+            url={url}
+          />
+        )
+      }
     } satisfies TranscriptDirectiveContribution
   },
   {

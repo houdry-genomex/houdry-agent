@@ -71,6 +71,7 @@ import {
   shouldLatchHostKeyChangedFailure,
   shouldLatchRemoteReauthFailure
 } from './backend-start-failure'
+import { isBootstrapInstallPending as checkBootstrapInstallPending } from './bootstrap-install-pending'
 import {
   detectRemoteDisplay,
   isWindowsBinaryPathInWsl,
@@ -78,7 +79,6 @@ import {
   resolveLinuxPasswordStore
 } from './bootstrap-platform'
 import { decideBootstrapRepair } from './bootstrap-repair-guard'
-import { isBootstrapInstallPending as checkBootstrapInstallPending } from './bootstrap-install-pending'
 import { runBootstrap } from './bootstrap-runner'
 import {
   BROWSER_WINDOW_HEIGHT,
@@ -185,7 +185,6 @@ import {
   stopFind
 } from './find-in-page'
 import { createFirstRunSetupGate, shouldAutoStartLocalBootstrap } from './first-run-setup-gate'
-import { createNodeSeedMrplHomeFs, resolveMrplTemplateDir, seedMrplDesktopHome } from './seed-mrpl-home'
 import { registerFsIpc } from './fs-ipc'
 import {
   filenameFromContentDisposition,
@@ -218,6 +217,7 @@ import {
   tightenSecretFileMode,
   writeSecretFileAtomic
 } from './hardening'
+import { resolveHoudryBinary, startHoudryRouter } from './houdry-router'
 import { cursorPointInWindow } from './hud-cursor'
 import { startHudGameOverlayWatch } from './hud-game-overlay'
 import { applyHudResetBounds, defaultHudBounds } from './hud-geometry'
@@ -334,6 +334,7 @@ import {
   type SecretStoragePolicy,
   writeSecretStoragePolicy
 } from './secret-storage-policy'
+import { createNodeSeedMrplHomeFs, resolveMrplTemplateDir, seedMrplDesktopHome } from './seed-mrpl-home'
 import {
   buildInstanceWindowUrl,
   buildSessionWindowUrl,
@@ -785,6 +786,7 @@ function resolveHermesHome() {
     if (!directoryExists(localappdata) && directoryExists(legacyHermesLocal)) {
       return legacyHermesLocal
     }
+
     if (!directoryExists(localappdata) && directoryExists(legacyHermesHome)) {
       return legacyHermesHome
     }
@@ -795,9 +797,11 @@ function resolveHermesHome() {
   {
     const houdryHome = path.join(app.getPath('home'), '.houdry-agent')
     const legacyHermes = path.join(app.getPath('home'), '.hermes')
+
     if (!directoryExists(houdryHome) && directoryExists(legacyHermes)) {
       return legacyHermes
     }
+
     return houdryHome
   }
 }
@@ -818,6 +822,7 @@ const ACTIVE_HERMES_ROOT = path.join(HERMES_HOME, 'hermes-agent')
 if (!process.env.VITEST && process.env.HERMES_DESKTOP_SKIP_MRPL_SEED !== '1') {
   try {
     const nodeFs = createNodeSeedMrplHomeFs()
+
     const templateDir = resolveMrplTemplateDir(
       [
         path.join(ACTIVE_HERMES_ROOT, 'config'),
@@ -827,6 +832,7 @@ if (!process.env.VITEST && process.env.HERMES_DESKTOP_SKIP_MRPL_SEED !== '1') {
       ],
       nodeFs
     )
+
     const seeded = seedMrplDesktopHome({ fs: nodeFs, hermesHome: HERMES_HOME, templateDir })
 
     if (seeded.wroteConfig) {
@@ -836,6 +842,7 @@ if (!process.env.VITEST && process.env.HERMES_DESKTOP_SKIP_MRPL_SEED !== '1') {
     console.warn('[houdry] MRPL desktop config seed skipped:', error)
   }
 }
+
 // VENV_ROOT — venv lives inside the repo, exactly like install.ps1 does it.
 const VENV_ROOT = path.join(ACTIVE_HERMES_ROOT, 'venv')
 // BOOTSTRAP_COMPLETE_MARKER — written by the first-launch bootstrap runner
@@ -17366,10 +17373,64 @@ app.on('open-url', (event, url) => {
   handleDeepLink(url)
 })
 
+// The fabric child we spawned, or null when none is ours — either because it
+// was already running (we adopt rather than duplicate it) or it failed to
+// start. Only a child we own gets killed on quit.
+let houdryRouterChild: ReturnType<typeof spawn> | null = null
+
+async function startLocalInferenceFabric() {
+  try {
+    const binary = resolveHoudryBinary({
+      appRoot: APP_ROOT,
+      envOverride: process.env.HOUDRY_ROUTER_BIN,
+      exists: candidate => fs.existsSync(candidate),
+      isPackaged: IS_PACKAGED,
+      platform: process.platform,
+      resourcesPath: process.resourcesPath,
+      sourceRepoRoot: SOURCE_REPO_ROOT
+    })
+
+    const { child } = await startHoudryRouter({
+      binary,
+      log: rememberLog,
+      spawnImpl: (command, args) =>
+        spawn(
+          command,
+          args,
+          hiddenWindowsChildOptions({
+            // Run from the binary's own directory: the fabric resolves its CAD
+            // pipeline and writes generated artifacts relative to there.
+            cwd: path.dirname(command),
+            stdio: ['ignore', 'pipe', 'pipe']
+          })
+        )
+    })
+
+    houdryRouterChild = child
+  } catch (cause) {
+    rememberLog(`[houdry-router] start failed: ${cause instanceof Error ? cause.message : String(cause)}`)
+  }
+}
+
+// Tree-kill on quit. The fabric spawns the Python CAD pipeline as a
+// grandchild, and on Windows a plain kill() would orphan it holding a lock on
+// the generated STEP file.
+app.on('before-quit', () => {
+  if (houdryRouterChild) {
+    stopBackendChild(houdryRouterChild)
+    houdryRouterChild = null
+  }
+})
+
 app.whenReady().then(() => {
   // Warm the login-shell PATH resolution immediately so it usually completes
   // before the backend start path awaits the same single-flight promise.
   void ensureLoginShellPath()
+
+  // Bring up the local inference fabric. Fire-and-forget: the app is usable
+  // against Azure meanwhile, and startHoudryRouter reports failure rather than
+  // throwing, so a missing binary must not block the window from opening.
+  void startLocalInferenceFabric()
 
   const systemCa = installWindowsSystemCaTrust(tls)
 

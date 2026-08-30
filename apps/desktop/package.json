@@ -144,6 +144,7 @@
     "streamdown": "2.5.0",
     "tailwind-merge": "3.6.0",
     "tailwindcss": "4.3.3",
+    "three": "0.180.0",
     "tw-shimmer": "0.4.12",
     "unicode-animations": "1.0.3",
     "unified": "11.0.5",
@@ -168,6 +169,7 @@
     "@types/node": "22.20.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "@types/three": "0.180.0",
     "@vitejs/plugin-react": "6.0.3",
     "babel-plugin-react-compiler": "1.0.0",
     "bippy": "0.5.43",
@@ -220,6 +222,10 @@
       {
         "from": "assets/icon.ico",
         "to": "icon.ico"
+      },
+      {
+        "from": "resources/bin",
+        "to": "bin"
       }
     ],
     "asar": true,
