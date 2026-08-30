@@ -2325,6 +2325,13 @@ export interface Translations {
     replaceCurrent: string
     pasteApiKey: string
     localApiKeyPlaceholder: string
+    /** Status line for the automatic local-inference scan (see local-inference-scan.ts). */
+    localScanning: string
+    localScanFound: string
+    localScanNone: string
+    localScanRescan: string
+    /** Unit noun in "Ollama · 127.0.0.1:11434 · 3 models". */
+    localScanModels: string
     couldNotSave: string
     connecting: string
     update: string
