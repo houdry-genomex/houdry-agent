@@ -46,6 +46,35 @@ export function localArtifactUrl(attr: string | undefined): string {
   }
 }
 
+/**
+ * Build an artifact URL from the directive's `origin` (host:port) and a
+ * root-relative path, returning '' unless it resolves to a loopback host.
+ *
+ * The fabric splits the URL this way deliberately: a bare `http://...` inside
+ * a directive is autolinked by the markdown pipeline before the directive is
+ * recognised, which stops it being a directive at all. Absolute values are
+ * still accepted so an older fabric keeps working.
+ */
+export function resolveArtifactUrl(origin: string | undefined, value: string | undefined): string {
+  if (!value) {
+    return ''
+  }
+
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value)) {
+    return localArtifactUrl(value)
+  }
+
+  if (!origin) {
+    return ''
+  }
+
+  const path = value.startsWith('/') ? value : `/${value}`
+
+  // Parsed, not string-matched: `127.0.0.1:8080@evil.com` looks loopback-ish
+  // but resolves to evil.com, and localArtifactUrl reads the real hostname.
+  return localArtifactUrl(`http://${origin}${path}`)
+}
+
 interface Model3DViewerProps {
   name: string
   previewUrl: string
@@ -62,6 +91,12 @@ function formatSize(bytes: number): string {
 }
 
 const FRAME_CLASS = 'relative h-72 w-full overflow-hidden rounded-lg border border-border bg-muted/30'
+
+const DownloadIcon: FC = () => (
+  <svg aria-hidden="true" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
 
 export const Model3DViewer: FC<Model3DViewerProps> = ({ name, previewUrl, sizeBytes, url }) => {
   const mountRef = useRef<HTMLDivElement | null>(null)
@@ -229,6 +264,7 @@ export const Model3DViewer: FC<Model3DViewerProps> = ({ name, previewUrl, sizeBy
   }, [previewUrl])
 
   const sizeLabel = formatSize(sizeBytes)
+  const stlName = name.replace(/\.ste?p$/i, '') + '.stl'
 
   return (
     <div className="my-2 flex flex-col gap-2">
@@ -252,12 +288,29 @@ export const Model3DViewer: FC<Model3DViewerProps> = ({ name, previewUrl, sizeBy
         </div>
       )}
 
-      <div className="flex items-center gap-2 text-sm">
-        <a className="font-medium underline underline-offset-2" download={name} href={url}>
-          {name}
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <a
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-accent"
+          download={name}
+          href={url}
+        >
+          <DownloadIcon />
+          Download STEP{sizeLabel ? ` · ${sizeLabel}` : ''}
         </a>
-        {sizeLabel && <span className="text-muted-foreground">{sizeLabel}</span>}
-        <span className="text-muted-foreground">· STEP, opens in FreeCAD or any CAD tool</span>
+        {previewUrl && (
+          // The STL is already fetched for the preview, but it is also the
+          // format a slicer or 3D printer wants, so offer it rather than
+          // making the user convert the STEP themselves.
+          <a
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-accent"
+            download={stlName}
+            href={previewUrl}
+          >
+            <DownloadIcon />
+            Download STL
+          </a>
+        )}
+        <span className="text-muted-foreground">STEP opens in FreeCAD or any CAD tool · STL prints</span>
       </div>
     </div>
   )
