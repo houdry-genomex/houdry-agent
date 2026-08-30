@@ -522,6 +522,13 @@ const ChatViewContent = memo(function ChatViewContent({
   // to send to until a retry rebinds one. Watch windows are pure spectators of a
   // subagent run driven elsewhere — no composer, transcript is read-only.
   const showChatBar = !loadingSession && !resumeExhausted && !isWatchWindow()
+  // A chat with nothing in it yet gives the composer the whole empty column, so
+  // it opens tall (see --composer-input-min-height under [data-chat-empty]) and
+  // reads as the thing to type into rather than a strip at the bottom. It drops
+  // back to one line the moment a transcript exists — from then on the room
+  // belongs to the conversation. Gated on !threadLoading so a session that is
+  // still hydrating doesn't flash tall and then collapse.
+  const emptyChat = messagesEmpty && !threadLoading
   const threadKey = selectedSessionId || activeSessionId || (isRoutedSessionView ? location.pathname : 'new')
 
   const modelOptionsQuery = useQuery<ModelOptionsResponse>({
@@ -604,6 +611,7 @@ const ChatViewContent = memo(function ChatViewContent({
         'relative isolate flex h-full min-w-0 flex-col overflow-hidden bg-(--ui-chat-surface-background)',
         className
       )}
+      data-chat-empty={emptyChat ? '' : undefined}
       data-chat-surface=""
       data-chat-unfocused={surfaceFocused ? undefined : ''}
       data-composer-surface-id={composerSurfaceId}

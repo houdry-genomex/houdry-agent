@@ -441,7 +441,11 @@
     --dt-font-mono:
       Menlo, Monaco, 'SF Mono', 'Courier Prime', monospace, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
       'Noto Color Emoji', emoji;
-    --dt-base-size: 1rem;
+    /* Root font size — every rem in the app scales from here, so this is the one
+       knob for overall UI size. 1.0625rem = 17px against the browser's 16px
+       default: chrome, sidebar and controls read a step larger without
+       re-tuning any individual component. */
+    --dt-base-size: 1.0625rem;
     --dt-line-height: 1.5;
     --dt-letter-spacing: -0.011em;
     --dt-spacing-mul: 1;
@@ -460,11 +464,14 @@
 
     --composer-shell-pad-block-end: 0.625rem;
     --message-text-indent: 0.75rem;
-    --conversation-text-font-size: 0.875rem;
-    --conversation-tool-font-size: 0.6875rem;
-    --conversation-caption-font-size: 0.75rem;
-    --conversation-line-height: 1.35rem;
-    --conversation-caption-line-height: 1rem;
+    /* Transcript type scale, one step up from the original 0.875/0.6875/0.75rem
+       ladder. Line heights move with it so the extra size buys readability
+       rather than crowding. */
+    --conversation-text-font-size: 0.9375rem;
+    --conversation-tool-font-size: 0.75rem;
+    --conversation-caption-font-size: 0.8125rem;
+    --conversation-line-height: 1.45rem;
+    --conversation-caption-line-height: 1.0625rem;
     --conversation-turn-gap: 0.375rem;
     /* Gap between top-level turn blocks (prose ↔ tools ↔ thinking) — enough air
        that scaffolding reads as separate from the reply, not crammed into it. */
@@ -740,7 +747,7 @@
     background: var(--ui-chat-surface-background);
     color: var(--dt-foreground);
     font-family: var(--dt-font-sans);
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     line-height: var(--dt-line-height, 1.55);
     letter-spacing: var(--dt-letter-spacing, 0);
     -webkit-user-select: none;
@@ -1751,7 +1758,22 @@ body.guest-pointer-lock :is(webview, iframe) {
 
 [data-slot='composer-rich-input'] {
   color: var(--ui-text-primary);
-  font-size: 0.8125rem;
+  font-size: var(--conversation-text-font-size);
+}
+
+/* A chat with no transcript yet: the composer opens five lines tall instead of
+   one. Nothing is competing for the column, and a new session is the moment the
+   user has the most to type — a single-line strip at the bottom of an empty page
+   reads like a status bar rather than the prompt.
+   `data-chat-empty` clears as soon as a message exists, so the box returns to its
+   normal one-line height for the rest of the conversation.
+
+   Expressed in em, not rem, so it stays exactly five lines if the composer's font
+   size changes: 1.5 is the `leading-normal` the input carries. Only min-height
+   moves — max-height, padding and the auto-grow behaviour are untouched, and the
+   thread's bottom clearance follows because it is measured from the real DOM. */
+[data-chat-empty] {
+  --composer-input-min-height: calc(5 * 1.5em);
 }
 
 [data-slot='composer-rich-input']:is(:empty, [data-empty])::before {
