@@ -129,10 +129,13 @@ export const Model3DViewer: FC<Model3DViewerProps> = ({ name, previewUrl, sizeBy
         const height = mount.clientHeight || 288
         const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 10_000)
 
-        // Frame the part from an isometric-ish angle. The 1.9 factor leaves
-        // margin so rotation never clips the corners out of view.
+        // Frame the part from an isometric-ish angle. The offset below puts the
+        // camera at ~1.63x this factor from the origin, so 1.3 lands the part
+        // at roughly 57% of frame height — close enough to fill the box, with
+        // enough margin that the body diagonal still clears the frustum when
+        // the user orbits it.
         const extent = Math.max(size.x, size.y, size.z) || 1
-        const distance = extent * 1.9
+        const distance = extent * 1.3
 
         camera.position.set(distance, -distance, distance * 0.8)
         camera.up.set(0, 0, 1) // CadQuery is Z-up; the three.js default is Y-up
