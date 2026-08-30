@@ -2328,24 +2328,14 @@ export const en: Translations = {
     placeholderStarting: 'Starting Houdry Agent...',
     placeholderReconnecting: 'Reconnecting to Houdry Agent…',
     placeholderFollowUp: 'Send follow-up',
-    newSessionPlaceholders: [
-      'Analyze a report — /document-analysis',
-      'Look up a procedure — /procedure-lookup',
-      'Run a calculation — /engineering-calculation',
-      'Draft a review — /report-generation',
-      'Search local knowledge — /knowledge-search',
-      'Ask Houdry Agent…',
-      'Start with a goal'
-    ],
-    followUpPlaceholders: [
-      'Send a follow-up',
-      'Add more context',
-      'Refine the request',
-      "What's next?",
-      'Keep it going',
-      'Push it further',
-      'Adjust or continue'
-    ],
+    // One hint each, not a rotating set. The placeholder is the only place the
+    // two input shortcuts are ever taught, and a hint that changes on every new
+    // chat teaches nothing — the user reads it once, gets a different line next
+    // time, and stops looking. A single stable string earns its pixels.
+    // (The pool is still an array: `pickPlaceholder` and the other locales are
+    // unchanged, so restoring variety is only an edit to these two lists.)
+    newSessionPlaceholders: ['Ask Houdry Agent — @ for files, / for commands'],
+    followUpPlaceholders: ['Send a follow-up — @ for files, / for commands'],
     startVoice: 'Start voice conversation',
     openDirective: 'Open',
     queueMessage: 'Queue message',
@@ -2763,6 +2753,11 @@ export const en: Translations = {
     replaceCurrent: 'Replace current value',
     pasteApiKey: 'Paste API key',
     localApiKeyPlaceholder: 'API key (optional — use houdry if the fabric has no token)',
+    localScanning: 'Looking for a local model server…',
+    localScanFound: 'Detected',
+    localScanNone: 'No local model server found. Start your engine and rescan, or enter a URL.',
+    localScanRescan: 'Rescan',
+    localScanModels: 'models',
     couldNotSave: 'Could not save credential.',
     connecting: 'Connecting',
     update: 'Update',

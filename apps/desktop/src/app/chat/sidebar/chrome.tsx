@@ -33,10 +33,14 @@ export function SidebarSectionMeta({ children }: { children: React.ReactNode }) 
 // where a working row paints its arc (`.arc-row` has zero standoff) — the ring
 // ran through the text.
 
-const rowMinH = 'min-h-[1.625rem]'
+// Row height and label size are one notch up from the original 1.625rem/0.8125rem.
+// At the old density a session title sat in a 26px band with ~1px of air above
+// and below, so the list read as one grey block and the selected row's fill had
+// nothing to sit in. The extra 6px is what turns that fill into a legible pill.
+const rowMinH = 'min-h-[2rem]'
 const rowPadX = 'pl-2 pr-2'
 const rowPadTrail = 'pr-2'
-const rowGap = 'gap-1.5'
+const rowGap = 'gap-2'
 const rowLead = 'grid size-3.5 shrink-0 place-items-center'
 const rowInset = cn(rowPadX, rowGap, 'flex h-full min-w-0 items-center self-stretch py-0.5')
 // `truncate` is overflow:hidden. `leading-none` (line-height: 1) makes the
@@ -44,7 +48,7 @@ const rowInset = cn(rowPadX, rowGap, 'flex h-full min-w-0 items-center self-stre
 // Windows is ~1.33em — gets shaved. 1.35 leaves room; the shell still owns
 // row height, so the extra leading just centers.
 export const SIDEBAR_TRUNCATED_LEADING = 'leading-[1.35]' as const
-const rowLabel = cn('min-w-0 truncate text-[0.8125rem] text-(--ui-text-secondary)', SIDEBAR_TRUNCATED_LEADING)
+const rowLabel = cn('min-w-0 truncate text-[0.875rem] text-(--ui-text-secondary)', SIDEBAR_TRUNCATED_LEADING)
 
 /** Inbox-style card (workspace + age, title + preview, model + size). */
 export const SIDEBAR_ROW_CARD_MIN_H = 'min-h-[3.375rem]' as const
@@ -77,7 +81,7 @@ export function SidebarDateDivider({
     // group/workspace: a divider heads a group the same way a repo header does,
     // so it borrows the header's hover-revealed "+" verbatim.
     <div className={cn('group/workspace flex select-none items-center gap-2 px-2 pb-0.5 pt-2', className)} {...props}>
-      <span className="shrink-0 text-[0.64rem] font-semibold uppercase tracking-[0.12em] text-(--ui-text-quaternary)">
+      <span className="shrink-0 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
         {label}
       </span>
       <span aria-hidden="true" className="h-px flex-1 bg-(--ui-stroke-tertiary)" />
@@ -100,7 +104,7 @@ export function SidebarRowShell({
 }: React.ComponentProps<'div'> & { actions?: React.ReactNode; actionsClassName?: string }) {
   return (
     <div
-      className={cn(rowMinH, rowPadTrail, 'grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-md', className)}
+      className={cn(rowMinH, rowPadTrail, 'grid grid-cols-[minmax(0,1fr)_auto] items-stretch rounded-lg', className)}
       {...props}
     >
       {children}

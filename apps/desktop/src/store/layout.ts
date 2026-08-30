@@ -13,7 +13,11 @@ import { $showAllProfiles, setShowAllProfiles } from './profile'
 import type { PullRequestBucket } from './pull-requests'
 import type { SessionStatusBucket } from './session-dot-state'
 
-export const SIDEBAR_DEFAULT_WIDTH = 237
+// Widened with the sidebar's row type (chrome.tsx): at 237 the larger titles
+// truncated ~3 characters earlier than before, and the session title is the one
+// thing this list cannot afford to clip. Doubles as the drag floor (see
+// setSidebarWidth), which is the point — below this the rows stop being readable.
+export const SIDEBAR_DEFAULT_WIDTH = 260
 export const SIDEBAR_MAX_WIDTH = 360
 // Open at the same width as the sessions sidebar so the two rails match, but
 // allow shrinking well below that (~30% under the old 14rem floor) for users who
