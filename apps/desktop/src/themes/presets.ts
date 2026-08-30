@@ -851,8 +851,88 @@ export const slateTheme: DesktopTheme = {
   }
 }
 
+/**
+ * Orchestrator — the Agent Orchestrator palette (shadcn base-luma / olive on
+ * Tailwind zinc), ported so Houdry can wear the same skin.
+ *
+ * Converted from that app's `frontend/src/styles/tokens.css`, whose values are
+ * authored in oklch. They are flattened to hex here because this theme system
+ * is hex-based; the conversion lands exactly on Tailwind's zinc ramp
+ * (#fafafa / #27272a / #18181b), which is the arithmetic check that it is
+ * faithful rather than eyeballed.
+ *
+ * Two deliberate departures, both forced by the hex constraint:
+ *  - Its hairlines are `oklch(1 0 0 / 7%)` — white at low alpha. Composited
+ *    over the surface they sit on, that is #232325 (dark) / #ececef (light).
+ *  - `midground` (Houdry's brand accent: streaming cursor, active pills,
+ *    composer ring) has no direct counterpart, so it takes that app's
+ *    `--color-brand-logo`, the same steel blue as its send button.
+ */
+export const orchestratorTheme: DesktopTheme = {
+  name: 'orchestrator',
+  label: 'Orchestrator',
+  description: 'Neutral zinc, near-black sidebar — the Agent Orchestrator palette',
+  colors: {
+    background: '#fafafa',
+    foreground: '#09090b',
+    card: '#fafafa',
+    cardForeground: '#09090b',
+    muted: '#f4f4f5',
+    mutedForeground: '#71717b',
+    popover: '#ffffff',
+    popoverForeground: '#09090b',
+    primary: '#18181b',
+    primaryForeground: '#fafafa',
+    secondary: '#f4f4f5',
+    secondaryForeground: '#18181b',
+    accent: '#f4f4f5',
+    accentForeground: '#18181b',
+    border: '#ececef',
+    input: '#e4e4e7',
+    ring: '#9f9fa9',
+    midground: '#304c83',
+    midgroundForeground: '#ffffff',
+    composerRing: '#304c83',
+    destructive: '#e7000b',
+    destructiveForeground: '#ffffff',
+    sidebarBackground: '#ffffff',
+    sidebarBorder: '#ececef',
+    userBubble: '#f4f4f5',
+    userBubbleBorder: '#e4e4e7'
+  },
+  darkColors: {
+    background: '#121215',
+    foreground: '#fafafa',
+    card: '#1f1f23',
+    cardForeground: '#fafafa',
+    muted: '#27272a',
+    mutedForeground: '#9f9fa9',
+    popover: '#28282d',
+    popoverForeground: '#fafafa',
+    primary: '#e4e4e7',
+    primaryForeground: '#18181b',
+    secondary: '#27272a',
+    secondaryForeground: '#fafafa',
+    accent: '#27272a',
+    accentForeground: '#fafafa',
+    border: '#232325',
+    input: '#1b1b1e',
+    ring: '#71717b',
+    midground: '#79b0dc',
+    midgroundForeground: '#0a0b0d',
+    composerRing: '#79b0dc',
+    destructive: '#ff6467',
+    destructiveForeground: '#18181b',
+    sidebarBackground: '#0c0c0e',
+    sidebarBorder: '#232325',
+    userBubble: '#27272a',
+    userBubbleBorder: '#232325'
+  }
+}
+
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   nous: nousTheme,
+  orchestrator: orchestratorTheme,
   github: githubTheme,
   catppuccin: catppuccinTheme,
   everforest: everforestTheme,
