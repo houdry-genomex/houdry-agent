@@ -2,6 +2,7 @@
 
 import { type FC, useEffect, useRef, useState } from 'react'
 
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 /**
@@ -288,27 +289,27 @@ export const Model3DViewer: FC<Model3DViewerProps> = ({ name, previewUrl, sizeBy
         </div>
       )}
 
+      {/* Rendered through Button rather than hand-rolled classes so these pick
+          up the same surface/text tokens as every other action in the app —
+          ad-hoc `bg-background` does not track the transcript's surface and
+          reads as a mismatched patch inside the message. */}
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <a
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-accent"
-          download={name}
-          href={url}
-        >
-          <DownloadIcon />
-          Download STEP{sizeLabel ? ` · ${sizeLabel}` : ''}
-        </a>
+        <Button asChild size="sm" variant="secondary">
+          <a download={name} href={url}>
+            <DownloadIcon />
+            Download STEP{sizeLabel ? ` · ${sizeLabel}` : ''}
+          </a>
+        </Button>
         {previewUrl && (
           // The STL is already fetched for the preview, but it is also the
           // format a slicer or 3D printer wants, so offer it rather than
           // making the user convert the STEP themselves.
-          <a
-            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 font-medium hover:bg-accent"
-            download={stlName}
-            href={previewUrl}
-          >
-            <DownloadIcon />
-            Download STL
-          </a>
+          <Button asChild size="sm" variant="outline">
+            <a download={stlName} href={previewUrl}>
+              <DownloadIcon />
+              Download STL
+            </a>
+          </Button>
         )}
         <span className="text-muted-foreground">STEP opens in FreeCAD or any CAD tool · STL prints</span>
       </div>
