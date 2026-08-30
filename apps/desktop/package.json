@@ -2,7 +2,7 @@
   "name": "houdry-agent",
   "productName": "Houdry Agent",
   "private": true,
-  "version": "0.17.7",
+  "version": "0.18.0",
   "description": "Native desktop shell for Houdry Agent (based on Hermes Agent by Nous Research).",
   "author": "houdry-genomex",
   "repository": {
