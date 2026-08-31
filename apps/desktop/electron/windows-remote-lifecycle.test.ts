@@ -46,7 +46,7 @@ test('Windows spawn publishes the initial ownership record before releasing the 
       ownershipId,
       spawnNonce: '0123456789abcdef',
       profile: 'default',
-      hermesPath: 'C:\\Hermes\\hermes.exe',
+      hermesPath: 'C:\\Houdry\\hermes.exe',
       hermesHome: 'C:\\Users\\andre\\.hermes',
       tokenFingerprint: 'a'.repeat(32),
       startedAt: '2026-07-14T00:00:00.000Z'
@@ -84,8 +84,8 @@ test('Windows relaunch gate refuses live and uncertain markers before executing 
           os: 'Windows',
           arch: 'AMD64',
           hermesHome: 'C:\\Users\\alice\\.hermes',
-          hermesPath: 'C:\\Hermes\\hermes.exe',
-          python: 'C:\\Hermes\\python.exe'
+          hermesPath: 'C:\\Houdry\\hermes.exe',
+          python: 'C:\\Houdry\\python.exe'
         })
       }
 
@@ -134,7 +134,7 @@ test('Windows relaunch gate uses strict install-wide marker parsing and fail-clo
   assert.doesNotMatch(script, /ErrorAction SilentlyContinue/)
 })
 
-test('Windows probe validates Hermes and Python topology before selection', async () => {
+test('Windows probe validates Houdry and Python topology before selection', async () => {
   let script = ''
   await probeWindowsRemote(
     sshWith(async command => {
@@ -218,22 +218,22 @@ test('platform detection surfaces transport failures as themselves, not unsuppor
           throw new Error('not recognized')
         }
 
-        throw new Error('Hermes is not installed on the remote Windows host.')
+        throw new Error('Houdry is not installed on the remote Windows host.')
       })
     ),
-    (err: any) => err.kind === 'unsupported-platform' && /Hermes is not installed/.test(err.message)
+    (err: any) => err.kind === 'unsupported-platform' && /Houdry is not installed/.test(err.message)
   )
 })
 
 test('helper command uses the fixed remote Python entry point and quotes path data', () => {
-  const command = helperCommand({ python: "C:\\Program Files\\Hermes's\\python.exe" }, 'inspect', [
+  const command = helperCommand({ python: "C:\\Program Files\\Houdry's\\python.exe" }, 'inspect', [
     'C:\\x y\\hermes.exe'
   ])
 
   const encoded = command.split(' ').pop()!
   const script = Buffer.from(encoded, 'base64').toString('utf16le')
   assert.match(script, /-m' 'hermes_cli\.windows_ssh_runtime' 'inspect'/)
-  assert.match(script, /Hermes''s/)
+  assert.match(script, /Houdry''s/)
   assert.match(script, /C:\\x y\\hermes\.exe/)
 })
 

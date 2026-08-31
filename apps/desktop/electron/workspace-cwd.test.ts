@@ -11,7 +11,7 @@ import { test } from 'vitest'
 
 import { isPackagedInstallPath } from './workspace-cwd'
 
-const installRoot = path.resolve('/opt/Hermes')
+const installRoot = path.resolve('/opt/Houdry')
 
 test('isPackagedInstallPath returns false when not packaged', () => {
   assert.equal(isPackagedInstallPath(installRoot, { isPackaged: false, installRoots: [installRoot] }), false)

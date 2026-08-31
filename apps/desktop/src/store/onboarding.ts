@@ -11,6 +11,7 @@ import {
   submitOAuthCode,
   validateProviderCredential
 } from '@/hermes'
+import { scanLocalInference } from '@/lib/local-inference-scan'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { setMainModelAssignment } from '@/store/cron-model-impact'
@@ -162,6 +163,12 @@ let pollTimer: number | null = null
 let providersRefreshPromise: null | Promise<void> = null
 
 const errMessage = (e: unknown) => (e instanceof Error ? e.message : String(e))
+
+// navigator.onLine only proves the machine has *a* link, never that the
+// internet is reachable — so we trust it in one direction only: false means
+// definitely offline, true means "maybe". That's enough to pick a sensible
+// default front door without ever blocking a flow on it.
+const isOnline = () => (typeof navigator === 'undefined' ? true : navigator.onLine !== false)
 
 const patch = (update: Partial<DesktopOnboardingState>) =>
   $desktopOnboarding.set({ ...$desktopOnboarding.get(), ...update })
@@ -331,7 +338,7 @@ async function completeWithModelConfirm(
 
       notifyGatewayTools(res.gateway_tools)
     } catch (error) {
-      onFail(error instanceof Error ? error.message : 'Hermes could not save the selected model.')
+      onFail(error instanceof Error ? error.message : 'Houdry could not save the selected model.')
 
       return
     }
@@ -367,8 +374,8 @@ function providerResolutionFailure(reason: null | string) {
   const detail = reason?.trim()
 
   return detail
-    ? `Connected, but Hermes still cannot resolve a usable provider. ${detail}`
-    : 'Connected, but Hermes still cannot resolve a usable provider.'
+    ? `Connected, but Houdry still cannot resolve a usable provider. ${detail}`
+    : 'Connected, but Houdry still cannot resolve a usable provider.'
 }
 
 async function refreshProviders() {
@@ -381,7 +388,12 @@ async function refreshProviders() {
   providersRefreshPromise = (async () => {
     try {
       const { providers } = await listOAuthProviders()
-      patch({ mode: providers.length > 0 ? 'oauth' : 'apikey', providers })
+      // Offline, every OAuth row is a dead end — each one opens a browser and
+      // waits on a callback that can't arrive. Land on the API-key / local
+      // endpoint form instead, which is the only thing that can work. The
+      // providers are still listed; the user can switch modes if they know
+      // they're about to reconnect.
+      patch({ mode: providers.length > 0 && isOnline() ? 'oauth' : 'apikey', providers })
     } catch {
       patch({ mode: 'apikey', providers: [] })
     } finally {
@@ -535,6 +547,47 @@ export function setOnboardingMode(mode: OnboardingMode) {
   patch({ mode })
 }
 
+// Auto-adoption runs at most once per app run. It is a boot convenience, not a
+// repair loop: if the engine it found later goes away, re-probing on every
+// refresh would silently rewrite the user's provider behind their back.
+let localAutoAdoptTried = false
+
+/** Reset hook for tests — the once-per-run latch is module state by design. */
+export function resetLocalAutoAdoptForTests() {
+  localAutoAdoptTried = false
+}
+
+// Last-resort before the blocking picker: look for an inference server already
+// running on this machine and configure it.
+//
+// This is what makes the app usable with the network cable out. Every path off
+// the first-run picker except the local-endpoint form needs a browser and a
+// round-trip to someone else's identity provider, so an unconfigured install on
+// an air-gapped machine dead-ends on a sign-in link it can never open — which
+// is the exact opposite of what an on-premise workbench is for.
+//
+// It only fires when the runtime is genuinely not ready, so a working install
+// never pays for it, and it delegates to saveOnboardingLocalEndpoint so the
+// endpoint is validated and persisted through the same path the manual form
+// uses — no second, subtly-different way to write a provider.
+async function tryAdoptLocalInference(ctx: OnboardingContext): Promise<boolean> {
+  if (localAutoAdoptTried) {
+    return false
+  }
+
+  localAutoAdoptTried = true
+
+  const hit = await scanLocalInference(baseUrl => validateProviderCredential('OPENAI_BASE_URL', baseUrl))
+
+  if (!hit) {
+    return false
+  }
+
+  const saved = await saveOnboardingLocalEndpoint(hit.baseUrl, '', ctx)
+
+  return saved.ok
+}
+
 export async function refreshOnboarding(ctx: OnboardingContext) {
   // Manual mode (user opened the selector from a working app): never
   // auto-dismiss on runtime-ready — the whole point is to let them add /
@@ -567,10 +620,17 @@ export async function refreshOnboarding(ctx: OnboardingContext) {
       kind: 'error',
       title: 'Runtime not ready',
       message:
-        'Hermes Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
+        'Houdry Agent could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
     })
 
     return false
+  }
+
+  // Nothing usable is configured. Before demanding a provider, check whether
+  // this machine is already running one — an on-premise install with Ollama or
+  // the Houdry fabric up should never be sent to a browser sign-in page.
+  if (await tryAdoptLocalInference(ctx)) {
+    return true
   }
 
   const reason = runtime.reason || state.reason || DEFAULT_ONBOARDING_REASON
@@ -769,7 +829,7 @@ export async function recheckExternalSignin(ctx: OnboardingContext) {
       provider,
       message:
         reason?.trim() ||
-        `Hermes still cannot reach ${provider.name}. Run \`${provider.cli_command}\` in a terminal first.`
+        `Houdry still cannot reach ${provider.name}. Run \`${provider.cli_command}\` in a terminal first.`
     })
   )
 }
@@ -913,7 +973,7 @@ export async function saveOnboardingLocalEndpoint(baseUrl: string, apiKey: strin
     if (!runtime.ready) {
       const detail = (runtime.reason ?? '').trim()
 
-      return { ok: false, message: detail || `Saved, but Hermes still cannot reach ${url}.` }
+      return { ok: false, message: detail || `Saved, but Houdry still cannot reach ${url}.` }
     }
 
     notifyReady('Houdry server')

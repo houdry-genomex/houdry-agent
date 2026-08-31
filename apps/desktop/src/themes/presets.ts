@@ -43,7 +43,7 @@ export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = {
 }
 
 /**
- * Nous — the canonical Hermes desktop identity, forked from the GitHub VS Code
+ * Nous — the canonical Houdry desktop identity, forked from the GitHub VS Code
  * theme (github.github-vscode-theme). Light is GitHub Light Default, dark is
  * GitHub Dark Default, both converted through the same path a Marketplace
  * install takes, so the palette here is byte-identical to importing the
@@ -169,7 +169,7 @@ export const githubTheme: DesktopTheme = {
 /** Catppuccin — Latte in light, Mocha in dark (Catppuccin.catppuccin-vsc). */
 
 /**
- * Nous — the canonical Hermes desktop identity: GitHub's chrome carrying Nous
+ * Nous — the canonical Houdry desktop identity: GitHub's chrome carrying Nous
  * blue. Forked from github.github-vscode-theme (Light Default / Dark Default),
  * with only the accent family re-seeded; every neutral is upstream's.
  *

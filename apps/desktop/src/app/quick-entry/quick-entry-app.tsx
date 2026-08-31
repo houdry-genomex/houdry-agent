@@ -131,7 +131,7 @@ export function QuickEntryApp() {
                 dispatch({ type: 'dismiss' })
               }
             }}
-            placeholder={state.connected ? 'Ask Hermes…' : 'Not connected — open Hermes to reconnect'}
+            placeholder={state.connected ? 'Ask Houdry…' : 'Not connected — open Houdry to reconnect'}
             ref={inputRef}
             spellCheck={false}
             style={{

@@ -10,6 +10,7 @@ import {
   type OnboardingContext,
   refreshOnboarding,
   requestDesktopOnboarding,
+  resetLocalAutoAdoptForTests,
   saveOnboardingLocalEndpoint,
   submitOnboardingCode
 } from './onboarding'
@@ -27,6 +28,13 @@ function baseState(overrides: Partial<DesktopOnboardingState> = {}): DesktopOnbo
     localEndpoint: false,
     ...overrides
   }
+}
+
+// Counts only the OAuth-provider fetches. The unconfigured path also probes
+// every local-inference candidate (see tryAdoptLocalInference), so a raw call
+// count no longer says anything about provider refreshes.
+function oauthCalls(api: { mock: { calls: [{ path: string }][] } }) {
+  return api.mock.calls.filter(([request]) => request.path === '/api/providers/oauth').length
 }
 
 function installApiMock(api: (request: { path: string }) => Promise<unknown>) {
@@ -82,6 +90,10 @@ describe('refreshOnboarding', () => {
   beforeEach(() => {
     window.localStorage.clear()
     $desktopOnboarding.set(baseState())
+    // The local auto-adopt latch is module state that survives between tests;
+    // without this the first not-ready case consumes it and later ones would
+    // pass or fail depending on their order.
+    resetLocalAutoAdoptForTests()
   })
 
   afterEach(() => {
@@ -96,6 +108,11 @@ describe('refreshOnboarding', () => {
         return { providers: [makeOAuthProvider('fresh')] }
       }
 
+      // No inference server is running on this machine in these tests.
+      if (path === '/api/providers/validate') {
+        return { ok: false, reachable: false, message: 'connection refused' }
+      }
+
       throw new Error(`unexpected api path: ${path}`)
     })
 
@@ -106,7 +123,7 @@ describe('refreshOnboarding', () => {
     const ready = await refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
 
     expect(ready).toBe(false)
-    expect(api).toHaveBeenCalledTimes(1)
+    expect(oauthCalls(api)).toBe(1)
     expect($desktopOnboarding.get().providers?.map(p => p.id)).toEqual(['fresh'])
     expect($desktopOnboarding.get().reason).toContain('No usable credentials found for openrouter.')
     expect($desktopOnboarding.get().reason).toContain('setup.status reports configured credentials')
@@ -118,6 +135,11 @@ describe('refreshOnboarding', () => {
         return { providers: [makeOAuthProvider('fresh')] }
       }
 
+      // No inference server is running on this machine in these tests.
+      if (path === '/api/providers/validate') {
+        return { ok: false, reachable: false, message: 'connection refused' }
+      }
+
       throw new Error(`unexpected api path: ${path}`)
     })
 
@@ -127,7 +149,7 @@ describe('refreshOnboarding', () => {
     const ready = await refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
 
     expect(ready).toBe(false)
-    expect(api).not.toHaveBeenCalled()
+    expect(oauthCalls(api)).toBe(0)
     expect($desktopOnboarding.get().providers?.map(p => p.id)).toEqual(['cached'])
   })
 
@@ -135,6 +157,11 @@ describe('refreshOnboarding', () => {
     const api = vi.fn(async ({ path }: { path: string }) => {
       if (path === '/api/providers/oauth') {
         return { providers: [makeOAuthProvider('fresh')] }
+      }
+
+      // No inference server is running on this machine in these tests.
+      if (path === '/api/providers/validate') {
+        return { ok: false, reachable: false, message: 'connection refused' }
       }
 
       throw new Error(`unexpected api path: ${path}`)
@@ -229,6 +256,11 @@ describe('refreshOnboarding', () => {
         return { providers: [makeOAuthProvider('fresh')] }
       }
 
+      // No inference server is running on this machine in these tests.
+      if (path === '/api/providers/validate') {
+        return { ok: false, reachable: false, message: 'connection refused' }
+      }
+
       throw new Error(`unexpected api path: ${path}`)
     })
 
@@ -247,13 +279,18 @@ describe('refreshOnboarding', () => {
     expect(ready).toBe(false)
     // requested overrides preservation — should downgrade.
     expect($desktopOnboarding.get().configured).toBe(false)
-    expect(api).toHaveBeenCalledTimes(1)
+    expect(oauthCalls(api)).toBe(1)
   })
 
   it('still surfaces onboarding when fallback failure happens before configured state', async () => {
     const api = vi.fn(async ({ path }: { path: string }) => {
       if (path === '/api/providers/oauth') {
         return { providers: [makeOAuthProvider('fresh')] }
+      }
+
+      // No inference server is running on this machine in these tests.
+      if (path === '/api/providers/validate') {
+        return { ok: false, reachable: false, message: 'connection refused' }
       }
 
       throw new Error(`unexpected api path: ${path}`)
@@ -265,7 +302,7 @@ describe('refreshOnboarding', () => {
     const ready = await refreshOnboarding(onboardingContext(fallbackTimeoutGateway()))
 
     expect(ready).toBe(false)
-    expect(api).toHaveBeenCalledTimes(1)
+    expect(oauthCalls(api)).toBe(1)
     expect($desktopOnboarding.get().configured).toBe(false)
     expect($desktopOnboarding.get().reason).toContain('request timed out')
   })
@@ -293,7 +330,7 @@ describe('refreshOnboarding', () => {
     const first = refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
     const second = refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
 
-    await vi.waitFor(() => expect(api).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(oauthCalls(api)).toBe(1))
 
     resolveProviders({ providers: [makeOAuthProvider('shared')] })
     await Promise.all([first, second])
@@ -467,6 +504,109 @@ describe('OAuth onboarding', () => {
     expect(state.flow.status).toBe('error')
     expect(state.flow.status === 'error' ? state.flow.message : '').toContain('Confirm this expensive model.')
     expect(requestGatewayMock).not.toHaveBeenCalledWith('setup.runtime_check', expect.anything())
+  })
+})
+
+// The whole point of an on-premise workbench is that it works with the network
+// cable out. An unconfigured install used to land on the OAuth picker, whose
+// every row opens a browser and waits for a callback that can never arrive.
+describe('offline first run', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    $desktopOnboarding.set(baseState())
+    resetLocalAutoAdoptForTests()
+  })
+
+  afterEach(() => {
+    window.localStorage.clear()
+    $desktopOnboarding.set(baseState())
+    vi.restoreAllMocks()
+  })
+
+  // setup.runtime_check answers false until the local endpoint is persisted,
+  // mirroring a real boot: nothing configured, then configured.
+  function adoptingGateway() {
+    let saved = false
+
+    return (async (method: string) => {
+      if (method === 'setup.status') {
+        return { provider_configured: saved }
+      }
+
+      if (method === 'setup.runtime_check') {
+        return saved ? { ok: true } : { ok: false, error: 'No inference provider is configured.' }
+      }
+
+      if (method === 'reload.env') {
+        saved = true
+
+        return {}
+      }
+
+      throw new Error(`unexpected gateway method: ${method}`)
+    }) as OnboardingContext['requestGateway']
+  }
+
+  it('adopts an inference server already running on this machine', async () => {
+    const calls: { body?: unknown; path: string }[] = []
+
+    installApiMock(async (request: { body?: unknown; path: string }) => {
+      calls.push(request)
+
+      if (request.path === '/api/providers/validate') {
+        const url = String((request.body as { value?: string }).value ?? '')
+
+        return url.includes('11434')
+          ? { ok: true, reachable: true, message: '', models: ['llama3.1:8b'] }
+          : { ok: false, reachable: false, message: 'connection refused' }
+      }
+
+      if (request.path === '/api/model/set') {
+        return { ok: true, provider: 'custom', model: 'llama3.1:8b', base_url: 'http://127.0.0.1:11434/v1' }
+      }
+
+      throw new Error(`unexpected api path: ${request.path}`)
+    })
+
+    const ready = await refreshOnboarding(onboardingContext(adoptingGateway()))
+
+    expect(ready).toBe(true)
+    expect($desktopOnboarding.get().configured).toBe(true)
+    // No provider list was ever fetched — the picker never opened.
+    expect(calls.some(call => call.path === '/api/providers/oauth')).toBe(false)
+    expect(calls.find(call => call.path === '/api/model/set')?.body).toMatchObject({
+      base_url: 'http://127.0.0.1:11434/v1',
+      model: 'llama3.1:8b',
+      provider: 'custom'
+    })
+  })
+
+  it('opens the endpoint form rather than the OAuth picker when the machine is offline', async () => {
+    const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+
+    installApiMock(async ({ path }: { path: string }) => {
+      if (path === '/api/providers/oauth') {
+        return { providers: [makeOAuthProvider('fresh')] }
+      }
+
+      if (path === '/api/providers/validate') {
+        return { ok: false, reachable: false, message: 'connection refused' }
+      }
+
+      throw new Error(`unexpected api path: ${path}`)
+    })
+
+    requestDesktopOnboarding('Need provider setup')
+
+    const ready = await refreshOnboarding(onboardingContext(emptyOpenRouterGateway()))
+
+    expect(ready).toBe(false)
+    // Providers are still listed, but the form the user lands on is the one
+    // that can actually be completed without a browser.
+    expect($desktopOnboarding.get().providers?.map(p => p.id)).toEqual(['fresh'])
+    expect($desktopOnboarding.get().mode).toBe('apikey')
+
+    onLine.mockRestore()
   })
 })
 

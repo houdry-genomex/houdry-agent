@@ -166,7 +166,7 @@ describe('settings helpers', () => {
       expect(providerGroup('AZURE_FOUNDRY_API_KEY')).toBe('Azure OpenAI')
     })
 
-    it('does not label third-party Hermes vendors (Desktop only lists Azure)', () => {
+    it('does not label third-party Houdry vendors (Desktop only lists Azure)', () => {
       expect(providerGroup('MINIMAX_API_KEY')).toBe('Other')
       expect(providerGroup('ANTHROPIC_API_KEY')).toBe('Other')
       expect(providerGroup('OPENROUTER_API_KEY')).toBe('Other')
