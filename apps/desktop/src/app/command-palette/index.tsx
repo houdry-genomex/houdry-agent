@@ -26,6 +26,7 @@ import {
   AppWindow,
   Archive,
   BarChart3,
+  Bookmark,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -93,6 +94,7 @@ import {
   ARTIFACTS_ROUTE,
   COMMAND_CENTER_ROUTE,
   CRON_ROUTE,
+  KNOWLEDGE_ROUTE,
   navigateToWorkspacePage,
   NEW_CHAT_ROUTE,
   PROFILES_ROUTE,
@@ -840,6 +842,14 @@ function CommandPaletteBody({ onExited }: { onExited: () => void }) {
             id: 'nav-artifacts',
             label: cc.nav.artifacts.title,
             run: go(ARTIFACTS_ROUTE)
+          },
+          {
+            action: 'nav.knowledge',
+            icon: Bookmark,
+            id: 'nav-knowledge',
+            keywords: ['knowledge', 'sop', 'sops', 'manual', 'rules', 'mrpl'],
+            label: cc.nav.knowledge.title,
+            run: go(KNOWLEDGE_ROUTE)
           },
           {
             action: 'nav.cron',

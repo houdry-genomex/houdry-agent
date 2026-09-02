@@ -55,6 +55,18 @@ knowledge/mrpl/
 Do **not** commit proprietary MRPL content to the public/private repo unless
 explicitly approved. The folders are empty placeholders.
 
+## Desktop Knowledge base
+
+Houdry Agent Desktop has a **Knowledge base** item in the left sidebar.
+
+- Files are copied into `$HERMES_HOME/knowledge/mrpl/sources/<category>/`.
+- Standing rules next to each SOP are written into `knowledge/mrpl/AGENTS.md`
+  and a marked section of `$HERMES_HOME/AGENTS.md` so new sessions load them.
+- The agent searches this tree with `search_files` / `read_file`. There is no
+  vector database and nothing is uploaded.
+
+Drop files in Explorer via **Open folder**, or use **Add files** / **Add note**.
+
 ## Recommended mount for a live site
 
 1. Copy or bind-mount real documents under `knowledge/mrpl/sources/` (or any path).

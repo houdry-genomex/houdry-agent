@@ -53,6 +53,29 @@ EXECUTE stays locked. MRPL acceptance facts come from local knowledge
 (`/knowledge-search` / mounted docs), not web search. Skills already encode
 the response contract; Desktop does not add a second chat UI.
 
+## Air-gap proof (for the sovereign demo)
+
+`Ctrl/Cmd+K` → **System** shows a live **Network activity** panel: every
+outbound HTTP(S) request any Electron session in this process attempted,
+classified **local** (loopback, private LAN, `.local`) or **external**
+(everything else). It's a passive observer (`webRequest.onBeforeRequest`) —
+it never blocks a request, only records it, so it can't hide a real call.
+
+- On Houdry fabric inference (LAN `/v1`), the external bucket stays at 0 —
+  that's the badge to show judges.
+- On Azure inference (dev-only testing path), external calls to
+  `*.openai.azure.com` show up here — expected, since Azure is a cloud
+  provider. This is also how you *prove* Azure is fully removed once that
+  cutover happens: the badge should read 0 external with no Azure entries.
+- `Clear` resets the ring buffer (500-entry cap) right before a demo run.
+- Implementation: `apps/desktop/electron/network-activity-log.ts` (pure,
+  unit-tested classifier + ring buffer), wired in `main.ts` via
+  `installNetworkActivityLogging()`.
+- Not covered: raw Node `http`/`https` calls that don't ride an Electron
+  session. The desktop's own backend transport (`api-transport.ts`) is one
+  of these, but it only ever talks to the local Hermes backend on loopback,
+  so it isn't a sovereignty gap.
+
 ## Out of scope here
 
 Phase 7 Hermes pruning of the **development git tree**, SharePoint/ERP/QMS, a

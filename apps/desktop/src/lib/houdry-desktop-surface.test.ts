@@ -9,6 +9,7 @@ describe('houdry desktop chrome', () => {
     expect(isHoudryHiddenWorkspacePath('/messaging?platform=telegram')).toBe(true)
     expect(isHoudryHiddenWorkspacePath('/skills')).toBe(false)
     expect(isHoudryHiddenWorkspacePath('/artifacts')).toBe(false)
+    expect(isHoudryHiddenWorkspacePath('/knowledge')).toBe(false)
     expect(isHoudryHiddenWorkspacePath('/')).toBe(false)
   })
 
@@ -16,6 +17,7 @@ describe('houdry desktop chrome', () => {
     expect(isHoudryDesktopSidebarNavId('messaging')).toBe(false)
     expect(isHoudryDesktopSidebarNavId('skills')).toBe(true)
     expect(isHoudryDesktopSidebarNavId('artifacts')).toBe(true)
+    expect(isHoudryDesktopSidebarNavId('knowledge')).toBe(true)
     expect(isHoudryDesktopSidebarNavId('cron')).toBe(true)
     expect(isHoudryDesktopSidebarNavId('new-session')).toBe(true)
   })

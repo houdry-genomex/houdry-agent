@@ -20,9 +20,20 @@ This skill covers **text extraction from PDFs and scanned documents**.
 
 > **Coming from a `read_file` EXTRACTION COVERAGE WARNING?** `read_file` auto-converts local PDFs but reads the text layer only; the warning footer lists the pages that yielded no text (scanned images). For a handful of pages, render + vision is fastest: `pdftoppm -jpeg -r 150 -f N -l N file.pdf /tmp/page` then `vision_analyze` each image. For bulk OCR of many pages, use marker-pdf below (Step 2).
 
-## Step 1: Remote URL Available?
+## Step 0: Air-gapped / on-prem deployment?
 
-If the document has a URL, **always try `web_extract` first**:
+If this deployment is configured for local-only inference (no cloud provider,
+`web_search`/`web_extract` tools disabled or absent from the toolset, or the
+user/org policy says nothing leaves the premises — e.g. any MRPL/on-prem
+workflow), **skip Step 1 entirely**. Go straight to Step 2 (local extractor)
+even for documents that happen to have a URL. Never call `web_extract` in
+that mode — it ships the document (or the URL, which can itself be sensitive)
+to an external service. State in the response that extraction was local-only.
+
+## Step 1: Remote URL Available? (online deployments only)
+
+If the deployment allows internet tools and the document has a public URL,
+you may try `web_extract`:
 
 ```
 web_extract(urls=["https://arxiv.org/pdf/2402.03300"])
@@ -30,8 +41,11 @@ web_extract(urls=["https://example.com/report.pdf"])
 ```
 
 This handles PDF-to-markdown conversion via Firecrawl with no local dependencies.
+It is a convenience for public internet documents only — never pass a path or
+URL that points at internal/confidential material into `web_extract`.
 
-Only use local extraction when: the file is local, web_extract fails, or you need batch processing.
+Use local extraction when: the deployment is air-gapped/on-prem (see Step 0),
+the file is local, web_extract fails, or you need batch processing.
 
 ## Step 2: Choose Local Extractor
 
@@ -166,7 +180,8 @@ No extra dependencies needed — pymupdf covers split, merge, search, and text e
 
 ## Notes
 
-- `web_extract` is always first choice for URLs
+- Air-gapped/on-prem deployments (MRPL, etc.): never call `web_extract` — local extraction only (see Step 0)
+- On unrestricted deployments, `web_extract` is a convenience for public-internet URLs only
 - pymupdf is the safe default — instant, no models, works everywhere
 - marker-pdf is for OCR, scanned docs, equations, complex layouts — install only when needed
 - Both helper scripts accept `--help` for full usage

@@ -23,11 +23,11 @@ const NEUTRAL_PERSONALITIES = new Set(['', 'default', 'none', 'neutral'])
 const FALLBACK_COPY: IntroCopy[] = [
   {
     headline: 'Houdry Agent is ready.',
-    body: 'Type /document-analysis, /procedure-lookup, /engineering-calculation, /report-generation, or /knowledge-search. Replies use WORKFLOW, provenance, and FACT / CALCULATION labels. EXECUTE stays locked.'
+    body: 'Add SOPs in Knowledge base (left sidebar). Type /document-analysis, /procedure-lookup, /engineering-calculation, /report-generation, or /knowledge-search. Replies use WORKFLOW, provenance, and FACT / CALCULATION labels. EXECUTE stays locked.'
   },
   {
     headline: 'Where should we start?',
-    body: 'MRPL facts come from local knowledge — not the web. Paste a document path or start with /knowledge-search.'
+    body: 'MRPL facts come from the local Knowledge base — not the web. Add SOPs in the left sidebar, or start with /knowledge-search.'
   },
   {
     headline: 'What needs attention?',

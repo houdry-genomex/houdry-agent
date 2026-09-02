@@ -22,6 +22,8 @@
 
 /** A model server we know how to find, and what to call it when we do. */
 export interface LocalInferenceCandidate {
+  /** When true, a reachable empty catalog is still a hit (Houdry fabric). Only after identity is confirmed. */
+  allowEmptyCatalog?: boolean
   /** OpenAI-compatible base URL, exactly as it would be persisted. */
   baseUrl: string
   /** Product name, shown verbatim — a proper noun, so it isn't translated. */
@@ -51,12 +53,30 @@ export type LocalInferenceProbe = (baseUrl: string) => Promise<{
  * for the length of a connect timeout.
  */
 export const LOCAL_INFERENCE_CANDIDATES: readonly LocalInferenceCandidate[] = [
-  { baseUrl: 'http://127.0.0.1:18080/v1', label: 'Houdry fabric' },
+  { baseUrl: 'http://127.0.0.1:18080/v1', label: 'Houdry fabric', allowEmptyCatalog: true },
+  { baseUrl: 'http://127.0.0.1:8090/v1', label: 'Houdry fabric', allowEmptyCatalog: true },
   { baseUrl: 'http://127.0.0.1:11434/v1', label: 'Ollama' },
   { baseUrl: 'http://127.0.0.1:1234/v1', label: 'LM Studio' },
   { baseUrl: 'http://127.0.0.1:8080/v1', label: 'llama.cpp' },
   { baseUrl: 'http://127.0.0.1:8000/v1', label: 'vLLM' }
 ]
+
+/**
+ * Loopback ports houdry serve actually binds. Keep in sync with
+ * `HOUDRY_FABRIC_PORTS` in electron/houdry-router.ts.
+ * Identity (`/.well-known/houdry.json`) is required — 8080/18080 are often
+ * Cursor or llama.cpp, and 8090 is the usual fallback when those are taken.
+ */
+export const FABRIC_LOOPBACK_PORTS = [18_080, 8090, 8080] as const
+
+export const FABRIC_LOOPBACK_CANDIDATES: readonly LocalInferenceCandidate[] = FABRIC_LOOPBACK_PORTS.map(port => ({
+  baseUrl: `http://127.0.0.1:${port}/v1`,
+  label: 'Houdry fabric',
+  allowEmptyCatalog: true
+}))
+
+/** Confirm a loopback URL is houdry serve, not an unrelated process on that port. */
+export type FabricIdentityProbe = (baseUrl: string) => Promise<boolean>
 
 /**
  * Reachable is not the same as usable. A port that accepts a connection but
@@ -72,12 +92,15 @@ function hitFrom(candidate: LocalInferenceCandidate, result: Awaited<ReturnType<
   }
 
   const models = (result.models ?? []).filter(model => model.trim().length > 0)
+  const hit = { baseUrl: candidate.baseUrl, label: candidate.label, models }
 
   if (models.length > 0) {
-    return { ...candidate, models }
+    return hit
   }
 
-  return /18080|houdry/i.test(candidate.baseUrl) ? { ...candidate, models: ['auto'] } : null
+  return candidate.allowEmptyCatalog || /:(18080|8090)(?:\/|$)|houdry/i.test(candidate.baseUrl)
+    ? { ...hit, models: ['auto'] }
+    : null
 }
 
 /**
@@ -109,6 +132,24 @@ export async function scanLocalInference(
   )
 
   return results.find(hit => hit !== null) ?? null
+}
+
+/** Same as scanLocalInference, but only the loopback ports houdry serve uses.
+ *  `isFabric` must confirm `/.well-known/houdry.json` — a port that merely
+ *  answers HTTP (WSL, Cursor, llama.cpp on 8080) is not the control plane. */
+export async function scanLocalFabric(
+  probe: LocalInferenceProbe,
+  isFabric: FabricIdentityProbe
+): Promise<LocalInferenceHit | null> {
+  const wrapped: LocalInferenceProbe = async baseUrl => {
+    if (!(await isFabric(baseUrl))) {
+      return { ok: false, reachable: false }
+    }
+
+    return probe(baseUrl)
+  }
+
+  return scanLocalInference(wrapped, FABRIC_LOOPBACK_CANDIDATES)
 }
 
 /** "Ollama · 127.0.0.1:11434 · 3 models" — the one-line summary of a hit. */

@@ -9,7 +9,9 @@
 model:
   provider: custom
   # Include /v1 — Houdry exposes OpenAI-compatible routes under that prefix.
+  # Agent discovers houdry serve on 18080, 8090, or 8080 via
+  # /.well-known/houdry.json; pin 127.0.0.1 so you never hit WSL/Hyper-V.
   base_url: "http://127.0.0.1:18080/v1"
-  # Houdry router picks a tool-capable model when tools are present.
+  # Always `auto` — the control plane picks a model that fits the GPU.
   default: "auto"
   # api_key: "houdry"   # optional if set in .env as OPENAI_API_KEY

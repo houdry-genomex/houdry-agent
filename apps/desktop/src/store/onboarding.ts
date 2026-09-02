@@ -331,7 +331,7 @@ async function completeWithModelConfirm(
 
       notifyGatewayTools(res.gateway_tools)
     } catch (error) {
-      onFail(error instanceof Error ? error.message : 'Hermes could not save the selected model.')
+      onFail(error instanceof Error ? error.message : 'Houdry could not save the selected model.')
 
       return
     }
@@ -367,8 +367,8 @@ function providerResolutionFailure(reason: null | string) {
   const detail = reason?.trim()
 
   return detail
-    ? `Connected, but Hermes still cannot resolve a usable provider. ${detail}`
-    : 'Connected, but Hermes still cannot resolve a usable provider.'
+    ? `Connected, but Houdry still cannot resolve a usable provider. ${detail}`
+    : 'Connected, but Houdry still cannot resolve a usable provider.'
 }
 
 async function refreshProviders() {
@@ -567,7 +567,7 @@ export async function refreshOnboarding(ctx: OnboardingContext) {
       kind: 'error',
       title: 'Runtime not ready',
       message:
-        'Hermes Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
+        'Houdry Desktop could not verify the running backend on startup. Some features may be unavailable until the gateway is reachable.'
     })
 
     return false
@@ -769,7 +769,7 @@ export async function recheckExternalSignin(ctx: OnboardingContext) {
       provider,
       message:
         reason?.trim() ||
-        `Hermes still cannot reach ${provider.name}. Run \`${provider.cli_command}\` in a terminal first.`
+        `Houdry still cannot reach ${provider.name}. Run \`${provider.cli_command}\` in a terminal first.`
     })
   )
 }
@@ -894,7 +894,7 @@ export async function saveOnboardingLocalEndpoint(baseUrl: string, apiKey: strin
   if (!model) {
     // Houdry fabric always advertises `auto`; other OpenAI-compatible servers
     // may omit /v1/models — still allow a router-style default for fabric URLs.
-    if (/18080|houdry/i.test(url)) {
+    if (/:(18080|8090)(?:\/|$)|houdry/i.test(url)) {
       model = 'auto'
     } else {
       return {
@@ -913,7 +913,7 @@ export async function saveOnboardingLocalEndpoint(baseUrl: string, apiKey: strin
     if (!runtime.ready) {
       const detail = (runtime.reason ?? '').trim()
 
-      return { ok: false, message: detail || `Saved, but Hermes still cannot reach ${url}.` }
+      return { ok: false, message: detail || `Saved, but Houdry still cannot reach ${url}.` }
     }
 
     notifyReady('Houdry server')

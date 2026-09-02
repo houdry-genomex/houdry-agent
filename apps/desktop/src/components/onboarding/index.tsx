@@ -1,14 +1,13 @@
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { validateProviderCredential } from '@/api/config'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import { useI18n } from '@/i18n'
+import { shouldAdoptDiscoveredUrl } from '@/lib/houdry-fabric-lan'
 import { Check, ChevronLeft, KeyRound, Loader2 } from '@/lib/icons'
-import { describeLocalInferenceHit, type LocalInferenceHit, scanLocalInference } from '@/lib/local-inference-scan'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { cn } from '@/lib/utils'
 import { $desktopBoot, type DesktopBootState } from '@/store/boot'
@@ -28,6 +27,7 @@ import {
   startProviderOAuth
 } from '@/store/onboarding'
 
+import { type FabricLanAdoptMode, FabricLanPanel } from './fabric-lan'
 import { DocsLink, FlowPanel } from './flow'
 import { AzureOpenAiProviderRow, HoudryFabricProviderRow } from './providers'
 
@@ -431,58 +431,18 @@ export function ApiKeyForm({
 
   const isLocal = option.envKey === 'OPENAI_BASE_URL'
 
-  // ── Automatic local-server detection ───────────────────────────────────────
-  //
-  // On-premise is the default deployment, so the local endpoint form starts by
-  // looking for a server instead of waiting to be told where one is. The scan
-  // runs when this option is selected and prefills the URL field with whatever
-  // it finds; the user still presses Connect. Detection that wrote config on
-  // its own would be the kind of "helpful" that is impossible to undo when it
-  // guesses wrong (two engines up, we adopt the wrong one).
-  //
-  // `scan.status` also carries the empty case deliberately: "we looked and
-  // found nothing" is the message that tells someone their daemon isn't
-  // running, which is the actual problem far more often than a wrong port.
-  const [scan, setScan] = useState<{ hit?: LocalInferenceHit; status: 'found' | 'idle' | 'none' | 'scanning' }>({
-    status: 'idle'
-  })
+  const adoptFabricUrl = useCallback(
+    (api: string, mode: FabricLanAdoptMode) => {
+      setValue(current => {
+        if (mode === 'pick' || mode === 'rescan') {
+          return api
+        }
 
-  const runScan = useCallback(
-    async (options?: { adoptUrl?: boolean }) => {
-      setScan({ status: 'scanning' })
-
-      const hit = await scanLocalInference(baseUrl => validateProviderCredential('OPENAI_BASE_URL', baseUrl))
-
-      if (!hit) {
-        setScan({ status: 'none' })
-
-        return
-      }
-
-      setScan({ hit, status: 'found' })
-
-      // On the automatic pass we only overwrite the placeholder default, never
-      // something typed: a scan finishing a beat after the user started editing
-      // must not eat their input. An explicit rescan always adopts, because
-      // pressing the button IS the request to replace what's in the field.
-      if (options?.adoptUrl !== false) {
-        setValue(current => (current.trim() && current !== (option.placeholder ?? '') ? current : hit.baseUrl))
-      }
+        return shouldAdoptDiscoveredUrl(current, option.placeholder ?? '') ? api : current
+      })
     },
     [option.placeholder]
   )
-
-  // Fires on entry to the local option and on every re-selection of it. Cheap
-  // enough to repeat — five loopback connects, the dead ones refused instantly.
-  useEffect(() => {
-    if (!isLocal) {
-      setScan({ status: 'idle' })
-
-      return
-    }
-
-    void runScan()
-  }, [isLocal, runScan])
 
   const alreadySet = isSet?.(option.envKey) ?? false
   // When set, surface the backend's redacted value (e.g. "sk-12…wxyz") as the
@@ -551,6 +511,7 @@ export function ApiKeyForm({
             <DocsLink href={option.docsUrl}>{isLocal ? t.onboarding.viewDocs : t.onboarding.getKey}</DocsLink>
           ) : null}
         </div>
+        {isLocal ? <FabricLanPanel onAdopt={adoptFabricUrl} selectedApi={value} /> : null}
         <Input
           autoComplete="off"
           autoFocus
@@ -564,37 +525,6 @@ export function ApiKeyForm({
           type={isLocal ? 'text' : 'password'}
           value={value}
         />
-        {isLocal ? (
-          <div className="flex min-h-5 items-center justify-between gap-3 text-xs">
-            {scan.status === 'scanning' ? (
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" />
-                {t.onboarding.localScanning}
-              </span>
-            ) : scan.status === 'found' && scan.hit ? (
-              <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-                <Check className="size-3 shrink-0 text-(--theme-primary)" />
-                <span className="truncate">
-                  {t.onboarding.localScanFound}: {describeLocalInferenceHit(scan.hit, t.onboarding.localScanModels)}
-                </span>
-              </span>
-            ) : scan.status === 'none' ? (
-              <span className="min-w-0 truncate text-muted-foreground">{t.onboarding.localScanNone}</span>
-            ) : (
-              <span />
-            )}
-            <Button
-              className="shrink-0"
-              disabled={scan.status === 'scanning'}
-              onClick={() => void runScan({ adoptUrl: true })}
-              size="xs"
-              type="button"
-              variant="text"
-            >
-              {t.onboarding.localScanRescan}
-            </Button>
-          </div>
-        ) : null}
         {isLocal ? (
           <Input
             autoComplete="off"

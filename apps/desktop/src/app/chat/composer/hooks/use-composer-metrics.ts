@@ -114,6 +114,14 @@ export function useComposerMetrics({
   // would re-register the observation.
   const poppedOutRef = useRef(poppedOut)
   poppedOutRef.current = poppedOut
+  // Same mirroring for isEmpty: an empty editor on the empty-chat surface is
+  // inflated to five lines tall by `[data-chat-empty]`'s
+  // --composer-input-min-height (see styles.css), which blows straight past
+  // COMPOSER_SINGLE_LINE_MAX_PX with nothing actually wrapped. Without this
+  // guard the observer reads that inflated scrollHeight on mount/resize and
+  // stacks the row on a totally empty, single-line-of-placeholder composer.
+  const isEmptyRef = useRef(isEmpty)
+  isEmptyRef.current = isEmpty
 
   const syncComposerMetrics = useCallback(() => {
     const composer = composerRef.current
@@ -160,7 +168,7 @@ export function useComposerMetrics({
     // oscillating across the wrap boundary as the input switches widths.
     const editor = editorRef.current
 
-    if (editor && editor.scrollHeight > COMPOSER_SINGLE_LINE_MAX_PX) {
+    if (editor && !isEmptyRef.current && editor.scrollHeight > COMPOSER_SINGLE_LINE_MAX_PX) {
       setExpanded(true)
     }
 

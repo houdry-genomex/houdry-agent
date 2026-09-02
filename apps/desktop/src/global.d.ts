@@ -192,6 +192,32 @@ declare global {
       probeConnectionConfig: (remoteUrl: string) => Promise<DesktopConnectionProbeResult>
       oauthLoginConnectionConfig: (remoteUrl: string) => Promise<DesktopOauthLoginResult>
       oauthLogoutConnectionConfig: (remoteUrl: string) => Promise<DesktopOauthLogoutResult>
+      // LAN probe for houdry serve (UDP 41808). Optional: older mains omit it.
+      houdryFabric?: {
+        discover: () => Promise<DesktopHoudryFabricEndpoint[]>
+        isControlPlane?: (origin: string) => Promise<boolean>
+      }
+      houdryKnowledge?: {
+        list: () => Promise<DesktopHoudryKnowledgeSnapshot>
+        importFiles: (paths: string[], category: string) => Promise<DesktopHoudryKnowledgeDocument[]>
+        createNote: (payload: {
+          category: string
+          rules: string
+          title: string
+        }) => Promise<DesktopHoudryKnowledgeDocument>
+        update: (
+          id: string,
+          patch: { rules?: string; title?: string }
+        ) => Promise<DesktopHoudryKnowledgeDocument>
+        remove: (id: string) => Promise<void>
+        openFolder: () => Promise<{ ok: boolean; error?: string }>
+      }
+      // Air-gap proof: live record of outbound HTTP(S) requests, classified
+      // local vs. external.
+      networkActivityLog?: {
+        list: () => Promise<DesktopNetworkActivitySnapshot>
+        clear: () => Promise<DesktopNetworkActivitySnapshot>
+      }
       // Hermes Cloud: one portal login powers discovery + silent per-agent
       // sign-in (cloud-auto-discovery Phase 3).
       cloud: {
@@ -1026,6 +1052,60 @@ export interface DesktopOauthLogoutResult {
 }
 
 // --- Hermes Cloud (cloud-auto-discovery Phase 3) ---
+
+/** A houdry serve instance found on this WiFi (UDP 41808). */
+export interface DesktopHoudryFabricEndpoint {
+  api: string
+  auth: boolean
+  name: string
+  openai: boolean
+  url: string
+  version?: string
+}
+
+export type DesktopHoudryKnowledgeCategory =
+  | 'sops'
+  | 'manuals'
+  | 'engineering'
+  | 'safety'
+  | 'standards'
+  | 'policies'
+  | 'reports'
+  | 'equipment'
+  | 'forms'
+  | 'correspondence'
+
+export interface DesktopHoudryKnowledgeDocument {
+  addedAt: string
+  category: DesktopHoudryKnowledgeCategory
+  id: string
+  relativePath: string
+  rules: string
+  title: string
+}
+
+export interface DesktopHoudryKnowledgeSnapshot {
+  documents: DesktopHoudryKnowledgeDocument[]
+  root: string
+}
+
+export type DesktopNetworkActivityClass = 'local' | 'external'
+
+export interface DesktopNetworkActivityEntry {
+  cls: DesktopNetworkActivityClass
+  host: string
+  id: number
+  method: string
+  resourceType: string
+  sessionLabel: string
+  ts: number
+  url: string
+}
+
+export interface DesktopNetworkActivitySnapshot {
+  entries: DesktopNetworkActivityEntry[]
+  externalCount: number
+}
 
 export interface DesktopCloudStatus {
   // The portal base URL the desktop talks to (default or env-overridden).

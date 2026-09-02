@@ -1327,7 +1327,10 @@ export interface Translations {
     archivedChats: string
     sections: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
     sectionDescriptions: Record<'maintenance' | 'sessions' | 'system' | 'usage', string>
-    nav: Record<'newChat' | 'settings' | 'skills' | 'messaging' | 'artifacts', { title: string; detail: string }>
+    nav: Record<
+      'newChat' | 'settings' | 'skills' | 'messaging' | 'artifacts' | 'knowledge',
+      { title: string; detail: string }
+    >
     sectionEntries: Record<'sessions' | 'system' | 'usage', { title: string; detail: string }>
     providerNavigate: string
     providerSessions: string
@@ -1375,6 +1378,13 @@ export interface Translations {
     logFile: string
     logLevel: string
     logSearchPlaceholder: string
+    networkActivity: string
+    networkActivityAirGapped: string
+    networkActivityExternal: (count: number) => string
+    networkActivityClear: string
+    networkActivityEmpty: string
+    networkActivityLocal: string
+    networkActivityExternalLabel: string
     maintenance: {
       runOps: string
       doctor: string
@@ -1803,6 +1813,49 @@ export interface Translations {
     chat: string
     copyUrl: string
     copyPath: string
+  }
+
+  knowledge: {
+    search: string
+    loading: string
+    add: string
+    addNote: string
+    createNote: string
+    openFolder: string
+    category: string
+    title: string
+    rules: string
+    rulesHint: string
+    save: string
+    remove: string
+    removeConfirm: (title: string) => string
+    emptyTitle: string
+    emptyDesc: string
+    noSelection: string
+    loadFailed: string
+    importFailed: string
+    saveFailed: string
+    removeFailed: string
+    openFailed: string
+    imported: (n: number) => string
+    saved: string
+    removed: string
+    path: string
+    localOnly: string
+    noteTitlePlaceholder: string
+    noteBodyPlaceholder: string
+    categories: {
+      sops: string
+      manuals: string
+      engineering: string
+      safety: string
+      standards: string
+      policies: string
+      reports: string
+      equipment: string
+      forms: string
+      correspondence: string
+    }
   }
 
   artifactCard: {
@@ -2332,6 +2385,14 @@ export interface Translations {
     localScanRescan: string
     /** Unit noun in "Ollama · 127.0.0.1:11434 · 3 models". */
     localScanModels: string
+    fabricScanning: string
+    fabricNone: string
+    fabricFoundOne: string
+    fabricFoundMany: string
+    fabricThisComputer: string
+    fabricThisComputerHint: string
+    fabricRescan: string
+    fabricToken: string
     couldNotSave: string
     connecting: string
     update: string

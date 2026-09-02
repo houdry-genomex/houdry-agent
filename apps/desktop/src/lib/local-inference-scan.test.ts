@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   describeLocalInferenceHit,
+  FABRIC_LOOPBACK_CANDIDATES,
+  type FabricIdentityProbe,
   LOCAL_INFERENCE_CANDIDATES,
   type LocalInferenceProbe,
+  scanLocalFabric,
   scanLocalInference
 } from './local-inference-scan'
 
@@ -106,5 +109,63 @@ describe('describeLocalInferenceHit', () => {
     const summary = describeLocalInferenceHit({ baseUrl: 'not a url', label: 'Custom', models: ['x'] }, 'models')
 
     expect(summary).toBe('Custom · not a url · 1 models')
+  })
+})
+
+describe('scanLocalFabric', () => {
+  const identityFor = (...urls: string[]): FabricIdentityProbe => async baseUrl => urls.includes(baseUrl)
+
+  it('accepts houdry serve on 8080 only after identity is confirmed', async () => {
+    const hit = await scanLocalFabric(
+      probeServing({ 'http://127.0.0.1:8080/v1': [] }),
+      identityFor('http://127.0.0.1:8080/v1')
+    )
+
+    expect(hit).toEqual({
+      baseUrl: 'http://127.0.0.1:8080/v1',
+      label: 'Houdry fabric',
+      models: ['auto']
+    })
+  })
+
+  it('does not treat a reachable 8080 as fabric without identity', async () => {
+    const hit = await scanLocalFabric(probeServing({ 'http://127.0.0.1:8080/v1': [] }), async () => false)
+
+    expect(hit).toBeNull()
+  })
+
+  it('still prefers 18080 when both loopback fabric ports answer', async () => {
+    const hit = await scanLocalFabric(
+      probeServing({
+        'http://127.0.0.1:18080/v1': ['auto'],
+        'http://127.0.0.1:8090/v1': ['auto'],
+        'http://127.0.0.1:8080/v1': ['auto']
+      }),
+      async () => true
+    )
+
+    expect(hit?.baseUrl).toBe('http://127.0.0.1:18080/v1')
+  })
+
+  it('finds houdry serve on 8090 when 18080 is not fabric', async () => {
+    const hit = await scanLocalFabric(
+      probeServing({ 'http://127.0.0.1:8090/v1': ['auto'] }),
+      identityFor('http://127.0.0.1:8090/v1')
+    )
+
+    expect(hit?.baseUrl).toBe('http://127.0.0.1:8090/v1')
+    expect(hit?.models).toEqual(['auto'])
+  })
+
+  it('only knocks on fabric loopback ports', async () => {
+    const seen: string[] = []
+
+    await scanLocalFabric(async baseUrl => {
+      seen.push(baseUrl)
+
+      return { models: [], ok: false, reachable: false }
+    }, async () => true)
+
+    expect(seen).toEqual(FABRIC_LOOPBACK_CANDIDATES.map(c => c.baseUrl))
   })
 })

@@ -204,6 +204,26 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
   probeConnectionConfig: remoteUrl => ipcRenderer.invoke('hermes:connection-config:probe', remoteUrl),
   oauthLoginConnectionConfig: remoteUrl => ipcRenderer.invoke('hermes:connection-config:oauth-login', remoteUrl),
   oauthLogoutConnectionConfig: remoteUrl => ipcRenderer.invoke('hermes:connection-config:oauth-logout', remoteUrl),
+  // LAN probe for houdry serve (UDP 41808).
+  houdryFabric: {
+    discover: () => ipcRenderer.invoke('houdry:fabric:discover'),
+    isControlPlane: (origin: string) => ipcRenderer.invoke('houdry:fabric:is-control-plane', origin)
+  },
+  houdryKnowledge: {
+    list: () => ipcRenderer.invoke('houdry:knowledge:list'),
+    importFiles: (paths, category) => ipcRenderer.invoke('houdry:knowledge:import', paths, category),
+    createNote: payload => ipcRenderer.invoke('houdry:knowledge:create-note', payload),
+    update: (id, patch) => ipcRenderer.invoke('houdry:knowledge:update', id, patch),
+    remove: id => ipcRenderer.invoke('houdry:knowledge:remove', id),
+    openFolder: () => ipcRenderer.invoke('houdry:knowledge:open-folder')
+  },
+  // Air-gap proof: live record of outbound HTTP(S) requests, classified
+  // local vs. external, so a sovereign deployment can show the external
+  // bucket staying empty.
+  networkActivityLog: {
+    list: () => ipcRenderer.invoke('houdry:network-log:list'),
+    clear: () => ipcRenderer.invoke('houdry:network-log:clear')
+  },
   // Hermes Cloud: one portal login powers discovery + silent per-agent sign-in
   // (cloud-auto-discovery Phase 3).
   cloud: {

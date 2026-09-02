@@ -7,6 +7,7 @@ import { SearchField } from '@/components/ui/search-field'
 import { SegmentedControl } from '@/components/ui/segmented-control'
 import { ResponsiveTabs } from '@/components/ui/tab-dropdown'
 import { Tip } from '@/components/ui/tooltip'
+import type { DesktopNetworkActivitySnapshot } from '@/global'
 import { getActionStatus, getLogs, getStatus, getUsageAnalytics, restartGateway, updateHermes } from '@/hermes'
 import type { ActionStatusResponse, AnalyticsResponse, StatusResponse } from '@/hermes'
 import { useI18n } from '@/i18n'
@@ -151,6 +152,7 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
   const [systemLoading, setSystemLoading] = useState(false)
   const [systemError, setSystemError] = useState('')
   const [systemAction, setSystemAction] = useState<ActionStatusResponse | null>(null)
+  const [networkLog, setNetworkLog] = useState<DesktopNetworkActivitySnapshot | null>(null)
   const [usagePeriod, setUsagePeriod] = useState<UsagePeriod>(30)
   const [usage, setUsage] = useState<AnalyticsResponse | null>(null)
   const [usageLoading, setUsageLoading] = useState(false)
@@ -196,12 +198,26 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
 
       setStatus(nextStatus)
       setLogs(nextLogs.lines)
+
+      const nextNetworkLog = await window.hermesDesktop?.networkActivityLog?.list()
+
+      if (nextNetworkLog) {
+        setNetworkLog(nextNetworkLog)
+      }
     } catch (error) {
       setSystemError(error instanceof Error ? error.message : String(error))
     } finally {
       setSystemLoading(false)
     }
   }, [logFile, logLevel])
+
+  const clearNetworkLog = useCallback(async () => {
+    const cleared = await window.hermesDesktop?.networkActivityLog?.clear()
+
+    if (cleared) {
+      setNetworkLog(cleared)
+    }
+  }, [])
 
   const refreshUsage = useCallback(async (days: UsagePeriod) => {
     const requestId = usageRequestRef.current + 1
@@ -462,6 +478,66 @@ export function CommandCenterView({ initialSection, onClose, onDeleteSession, on
                 ) : (
                   <PageLoader className="min-h-32" label={cc.loadingStatus} />
                 )}
+              </div>
+
+              <div className="pt-2">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <span className="text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
+                    {cc.networkActivity}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[length:var(--conversation-caption-font-size)] font-medium',
+                        !networkLog || networkLog.externalCount === 0
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : 'bg-destructive/10 text-destructive'
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'size-1.5 rounded-full',
+                          !networkLog || networkLog.externalCount === 0 ? 'bg-emerald-500' : 'bg-destructive'
+                        )}
+                      />
+                      {!networkLog || networkLog.externalCount === 0
+                        ? cc.networkActivityAirGapped
+                        : cc.networkActivityExternal(networkLog.externalCount)}
+                    </span>
+                    <Button onClick={() => void clearNetworkLog()} size="xs" variant="text">
+                      {cc.networkActivityClear}
+                    </Button>
+                  </div>
+                </div>
+                <div className="max-h-32 overflow-y-auto rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) p-1">
+                  {!networkLog || networkLog.entries.length === 0 ? (
+                    <div className="p-2 text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)">
+                      {cc.networkActivityEmpty}
+                    </div>
+                  ) : (
+                    <ul className="flex flex-col gap-0.5">
+                      {networkLog.entries.slice(0, 30).map(entry => (
+                        <li
+                          className="flex items-center gap-2 rounded px-1.5 py-0.5 text-[length:var(--conversation-caption-font-size)]"
+                          key={entry.id}
+                        >
+                          <span
+                            className={cn(
+                              'shrink-0 rounded px-1 py-px text-[0.625rem] font-medium uppercase',
+                              entry.cls === 'external'
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'bg-(--ui-bg-tertiary) text-(--ui-text-tertiary)'
+                            )}
+                          >
+                            {entry.cls === 'external' ? cc.networkActivityExternalLabel : cc.networkActivityLocal}
+                          </span>
+                          <span className="shrink-0 text-(--ui-text-tertiary)">{entry.method}</span>
+                          <span className="min-w-0 truncate text-foreground">{entry.host}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
 
               <div className="flex min-h-0 flex-col pt-2">

@@ -138,6 +138,7 @@ import {
   type AppView,
   ARTIFACTS_ROUTE,
   CRON_ROUTE,
+  KNOWLEDGE_ROUTE,
   SIDEBAR_NAV_AREA,
   type SidebarNavContribution,
   SKILLS_ROUTE
@@ -207,6 +208,13 @@ const SIDEBAR_NAV: SidebarNavItem[] = [
     icon: props => <Codicon name="files" {...props} />,
     route: ARTIFACTS_ROUTE,
     keybindActionId: 'nav.artifacts'
+  },
+  {
+    id: 'knowledge',
+    label: '',
+    icon: props => <Codicon name="book" {...props} />,
+    route: KNOWLEDGE_ROUTE,
+    keybindActionId: 'nav.knowledge'
   },
   {
     id: 'cron',
@@ -1469,6 +1477,7 @@ export function ChatSidebar({
                 const active =
                   (item.id === 'skills' && currentView === 'skills') ||
                   (item.id === 'artifacts' && currentView === 'artifacts') ||
+                  (item.id === 'knowledge' && currentView === 'knowledge') ||
                   (item.id === 'cron' && currentView === 'cron') ||
                   // Contributed rows light up at their own route.
                   (Boolean(item.route) && pathname === item.route)

@@ -16,8 +16,9 @@ metadata:
 
 ## Responsibility
 
-Search the **local knowledge mount** (`knowledge/mrpl/` or a site-configured
-path) for manuals, SOPs, and past correspondence, using only local file tools.
+Search the **local knowledge mount** (`$HERMES_HOME/knowledge/mrpl/`, also
+the Knowledge base sidebar) for manuals, SOPs, and past correspondence, using
+only local file tools.
 
 **Does not:** call `web_search` / `web_extract` / any external API to answer
 MRPL knowledge questions. **Does not** invent results when nothing matches.
@@ -35,7 +36,8 @@ MRPL knowledge questions. **Does not** invent results when nothing matches.
 
 - `search_files`, `read_file`
 - Working directory or `skills.external_dirs` pointed at the real mount
-  (see `docs/mrpl/KNOWLEDGE.md`)
+  (`$HERMES_HOME/knowledge/mrpl` — see `docs/mrpl/KNOWLEDGE.md`). Standing rules
+  added in the Desktop Knowledge base are written into `$HERMES_HOME/AGENTS.md`.
 
 ## Inputs
 

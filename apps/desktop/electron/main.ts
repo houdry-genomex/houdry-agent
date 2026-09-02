@@ -217,6 +217,16 @@ import {
   tightenSecretFileMode,
   writeSecretFileAtomic
 } from './hardening'
+import { discoverHoudryFabric, probeHoudryControlPlane } from './houdry-fabric-discover'
+import {
+  createKnowledgeNote,
+  createNodeKnowledgeHomeFs,
+  importKnowledgeFiles,
+  knowledgeSourceDirs,
+  removeKnowledgeDocument,
+  snapshotKnowledge,
+  updateKnowledgeDocument
+} from './houdry-knowledge'
 import { resolveHoudryBinary, startHoudryRouter } from './houdry-router'
 import { cursorPointInWindow } from './hud-cursor'
 import { startHudGameOverlayWatch } from './hud-game-overlay'
@@ -265,6 +275,7 @@ import {
 } from './native-oauth'
 import { runNativeLogin } from './native-oauth-login'
 import { loadNativeTokenSet, type NativeTokenStoreIo, persistNativeTokenSet } from './native-token-store'
+import { NetworkActivityLog, observeSessionNetworkActivity } from './network-activity-log'
 import { serializeJsonBody, setJsonRequestHeaders } from './oauth-net-request'
 import { LEGACY_OAUTH_PARTITION, resolveOauthPartition } from './oauth-partition'
 import { createParentStartMarkerResolver, parentWatchdogEnv } from './parent-process-identity'
@@ -6982,6 +6993,16 @@ function installDownloadHandling() {
       // No Downloads directory to offer — keep Chromium's default prompt.
     }
   })
+}
+
+// Air-gap proof: a shared, process-wide ring buffer of every outbound
+// HTTP(S) request any Electron session has attempted, classified local vs.
+// external. Surfaced in the Command Center System panel so a sovereign
+// deployment can show, live, that the "external" bucket stays empty.
+const networkActivityLog = new NetworkActivityLog({ capacity: 500 })
+
+function installNetworkActivityLogging() {
+  observeSessionNetworkActivity(session.defaultSession, networkActivityLog, 'default')
 }
 
 function installMediaPermissions() {
@@ -14227,6 +14248,86 @@ function createWindow() {
   })
 }
 
+ipcMain.handle('houdry:fabric:discover', () => discoverHoudryFabric())
+ipcMain.handle('houdry:fabric:is-control-plane', (_event, origin) => {
+  if (typeof origin !== 'string' || !origin.trim()) {
+    return false
+  }
+
+  return probeHoudryControlPlane(origin.trim())
+})
+
+ipcMain.handle('houdry:network-log:list', () => ({
+  entries: networkActivityLog.list(),
+  externalCount: networkActivityLog.externalCount()
+}))
+ipcMain.handle('houdry:network-log:clear', () => {
+  networkActivityLog.clear()
+
+  return { entries: [], externalCount: 0 }
+})
+
+ipcMain.handle('houdry:knowledge:list', () =>
+  snapshotKnowledge({ fs: createNodeKnowledgeHomeFs(), hermesHome: HERMES_HOME })
+)
+ipcMain.handle('houdry:knowledge:import', (_event, paths, category) => {
+  if (!Array.isArray(paths) || typeof category !== 'string') {
+    throw new Error('invalid knowledge import')
+  }
+
+  return importKnowledgeFiles({
+    category,
+    fs: createNodeKnowledgeHomeFs(),
+    hermesHome: HERMES_HOME,
+    sourcePaths: paths.map(item => String(item))
+  })
+})
+ipcMain.handle('houdry:knowledge:create-note', (_event, payload) => {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('invalid knowledge note')
+  }
+
+  return createKnowledgeNote({
+    category: String(payload.category ?? ''),
+    fs: createNodeKnowledgeHomeFs(),
+    hermesHome: HERMES_HOME,
+    rules: String(payload.rules ?? ''),
+    title: String(payload.title ?? '')
+  })
+})
+ipcMain.handle('houdry:knowledge:update', (_event, id, patch) => {
+  if (typeof id !== 'string' || !id.trim()) {
+    throw new Error('invalid knowledge document')
+  }
+
+  return updateKnowledgeDocument({
+    fs: createNodeKnowledgeHomeFs(),
+    hermesHome: HERMES_HOME,
+    id,
+    rules: typeof patch?.rules === 'string' ? patch.rules : undefined,
+    title: typeof patch?.title === 'string' ? patch.title : undefined
+  })
+})
+ipcMain.handle('houdry:knowledge:remove', (_event, id) => {
+  if (typeof id !== 'string' || !id.trim()) {
+    throw new Error('invalid knowledge document')
+  }
+
+  removeKnowledgeDocument({ fs: createNodeKnowledgeHomeFs(), hermesHome: HERMES_HOME, id })
+})
+ipcMain.handle('houdry:knowledge:open-folder', async () => {
+  const io = createNodeKnowledgeHomeFs()
+  const root = knowledgeSourceDirs(HERMES_HOME, io)
+
+  try {
+    const error = await shell.openPath(path.normalize(root))
+
+    return error ? { ok: false, error } : { ok: true }
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+  }
+})
+
 ipcMain.handle('hermes:connection', async (_event, profile) => {
   // Coalesce concurrent renderer dials for one profile scope (#90812): the
   // renderer-side reconnect lock is per-window, so two windows waking at once
@@ -17469,6 +17570,7 @@ app.whenReady().then(() => {
   registerMediaProtocol()
   installEmbedReferer()
   installRemoteHeaderRules()
+  installNetworkActivityLogging()
   registerDeepLinkProtocol()
 
   ensureWslWindowsFonts()

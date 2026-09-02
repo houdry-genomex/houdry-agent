@@ -1,6 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { knowledgeSourceDirs } from './houdry-knowledge'
+
 /**
  * First-run seed of MRPL Desktop defaults into HERMES_HOME.
  *
@@ -62,6 +64,7 @@ export function seedMrplDesktopHome({
   }
 
   io.mkdirp(hermesHome)
+  knowledgeSourceDirs(hermesHome, io)
 
   const configPath = io.join(hermesHome, 'config.yaml')
   const envPath = io.join(hermesHome, '.env')

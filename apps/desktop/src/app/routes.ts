@@ -15,6 +15,7 @@ export const SKILLS_ROUTE = '/skills'
 export const MESSAGING_ROUTE = '/messaging'
 export const WEBHOOKS_ROUTE = '/webhooks'
 export const ARTIFACTS_ROUTE = '/artifacts'
+export const KNOWLEDGE_ROUTE = '/knowledge'
 export const CRON_ROUTE = '/cron'
 export const PROFILES_ROUTE = '/profiles'
 export const AGENTS_ROUTE = '/agents'
@@ -26,6 +27,7 @@ export type AppView =
   | 'chat'
   | 'command-center'
   | 'cron'
+  | 'knowledge'
   // A contributed (plugin) full page at its own route — NOT chat. Without this
   // distinction contributed paths fell through appViewForPath's 'chat' default,
   // so the sidebar kept a session highlighted and the titlebar kept the
@@ -43,6 +45,7 @@ export type AppRouteId =
   | 'artifacts'
   | 'command-center'
   | 'cron'
+  | 'knowledge'
   | 'messaging'
   | 'new'
   | 'profiles'
@@ -65,6 +68,7 @@ export const APP_ROUTES = [
   { id: 'messaging', path: MESSAGING_ROUTE, view: 'messaging' },
   { id: 'webhooks', path: WEBHOOKS_ROUTE, view: 'webhooks' },
   { id: 'artifacts', path: ARTIFACTS_ROUTE, view: 'artifacts' },
+  { id: 'knowledge', path: KNOWLEDGE_ROUTE, view: 'knowledge' },
   { id: 'cron', path: CRON_ROUTE, view: 'cron' },
   { id: 'profiles', path: PROFILES_ROUTE, view: 'profiles' },
   { id: 'agents', path: AGENTS_ROUTE, view: 'agents' },
@@ -201,7 +205,7 @@ export function appViewForPath(pathname: string): AppView {
 }
 
 /** Does `to` land on a full page rendered INSIDE the workspace pane
- *  (skills/messaging/artifacts/contributed routes)? Overlays don't count —
+ *  (skills/messaging/artifacts/knowledge/contributed routes)? Overlays don't count —
  *  they float over whatever the workspace is already showing. */
 function isWorkspacePageRoute(to: string): boolean {
   const view = appViewForPath(to)
@@ -210,7 +214,7 @@ function isWorkspacePageRoute(to: string): boolean {
 }
 
 /** True while the workspace pane shows a FULL PAGE (skills/messaging/
- *  artifacts/plugin routes) instead of the chat. Published by the wiring
+ *  artifacts/knowledge/plugin routes) instead of the chat. Published by the wiring
  *  (which owns the router location); the workspace pane contribution mirrors
  *  it as `headerVeto` so the zone tab bar stands down on pages. Overlays
  *  (settings/…) don't count — the chat stays beneath them. */

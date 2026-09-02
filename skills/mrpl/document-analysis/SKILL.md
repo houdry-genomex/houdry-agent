@@ -68,9 +68,13 @@ Labeled sections:
 happens, or the input is a photo/scan/drawing from the start:
 
 1. For bulk/complex scans (many pages, tables, equations): use the
-   `ocr-and-documents` skill (marker-pdf).
+   `ocr-and-documents` skill (marker-pdf) — **local-only**: MRPL is an
+   air-gapped deployment, so skip that skill's Step 1 and never call
+   `web_extract`/`web_search` on any document, path, or URL. Every extraction
+   runs on-device.
 2. For a handful of pages, a single photo, a handwritten note, or an
-   engineering drawing: render/attach the image and use `vision_analyze`.
+   engineering drawing: render/attach the image and use `vision_analyze`
+   (on-device vision model, not a cloud vision API).
 3. Always state the extraction method in the response's provenance line —
    e.g. "vision-extracted from a photo, not machine text" — since this affects
    how much a human should trust the transcription.
