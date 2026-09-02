@@ -42,7 +42,7 @@ export const EMPTY_SELECT_VALUE = '__hermes_empty__'
 export const CONTROL_TEXT = 'text-xs'
 
 // Houdry Agent Desktop only surfaces Azure OpenAI (DEV) and Houdry GPU fabric
-// (PROD — custom-endpoints tab). Other Hermes vendors stay in the Python
+// (PROD — custom-endpoints tab). Other Houdry vendors stay in the Python
 // catalog for CLI/gateway; they must not get Settings Keys cards here.
 export const PROVIDER_GROUPS: ProviderPrefix[] = [
   {

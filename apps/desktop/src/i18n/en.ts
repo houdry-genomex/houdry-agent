@@ -1109,8 +1109,7 @@ export const en: Translations = {
     providers: {
       connectAccount: 'Connect an account',
       haveApiKey: 'Have an API key instead?',
-      intro:
-        'Two inference paths: Azure OpenAI (GPT-5.6 Luna) for DEV, or Houdry GPU fabric for PROD.',
+      intro: 'Two inference paths: Azure OpenAI (GPT-5.6 Luna) for DEV, or Houdry GPU fabric for PROD.',
       connected: 'Connected',
       collapse: 'Collapse',
       connectAnother: 'Connect another provider',
@@ -2703,8 +2702,7 @@ export const en: Translations = {
     installTo: 'Will install to',
     retryAfterRun: 'I’ve run it -- retry',
     setupChoiceTitle: 'Set up Houdry Agent',
-    setupChoiceDesc:
-      'Install Houdry Agent on this computer, or connect to a gateway you already run.',
+    setupChoiceDesc: 'Install Houdry Agent on this computer, or connect to a gateway you already run.',
     connectExistingTitle: 'Connect to an existing gateway',
     connectExistingShort: 'Connect existing',
     connectExistingDesc: 'Use a remote backend with a session token or browser sign-in. No local install will start.',

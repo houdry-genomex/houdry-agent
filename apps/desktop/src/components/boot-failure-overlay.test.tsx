@@ -14,7 +14,7 @@ import { BootFailureOverlay } from './boot-failure-overlay'
 
 function failBoot() {
   $desktopBoot.set({
-    error: 'Could not connect to Hermes gateway',
+    error: 'Could not connect to Houdry gateway',
     fakeMode: false,
     message: 'boot failed',
     phase: 'renderer.error',
@@ -67,7 +67,7 @@ afterEach(cleanup)
 describe('BootFailureOverlay', () => {
   it('stays hidden for latched bootstrap install failures', () => {
     $desktopBoot.set({
-      error: "Hermes bootstrap failed at stage 'dependencies': syntax check",
+      error: "Houdry bootstrap failed at stage 'dependencies': syntax check",
       fakeMode: false,
       message: 'boot failed',
       phase: 'renderer.error',

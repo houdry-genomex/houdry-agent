@@ -245,7 +245,7 @@ describe('SidebarSessionRow', () => {
         onPin={noop}
         onResume={noop}
         onToggleUnread={noop}
-        session={makeSession({ title: 'Hermes doctor health check results' })}
+        session={makeSession({ title: 'Houdry doctor health check results' })}
         unread={false}
       />
     )

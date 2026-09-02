@@ -1,6 +1,6 @@
 /**
  * Houdry Agent Desktop inference is Azure OpenAI (DEV) or Houdry GPU fabric
- * (PROD). Other Hermes vendors stay in the Python catalog for CLI/gateway
+ * (PROD). Other Houdry vendors stay in the Python catalog for CLI/gateway
  * compatibility; they must not appear in Desktop Settings, onboarding, the
  * API-key picker, or the composer model menu.
  */

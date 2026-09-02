@@ -101,7 +101,7 @@ describe('ProvidersSettings', () => {
     render(<ProvidersSettings onClose={vi.fn()} onViewChange={vi.fn()} view="keys" />)
 
     const row = await screen.findByText('Houdry server URL')
-    expect(screen.getByText(/fabric control plane/)).toBeTruthy()
+    expect(screen.getByText(/houdry serve on this WiFi/)).toBeTruthy()
 
     fireEvent.click(row)
 

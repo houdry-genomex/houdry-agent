@@ -224,7 +224,7 @@ contextBridge.exposeInMainWorld('hermesDesktop', {
     list: () => ipcRenderer.invoke('houdry:network-log:list'),
     clear: () => ipcRenderer.invoke('houdry:network-log:clear')
   },
-  // Hermes Cloud: one portal login powers discovery + silent per-agent sign-in
+  // Houdry Cloud: one portal login powers discovery + silent per-agent sign-in
   // (cloud-auto-discovery Phase 3).
   cloud: {
     status: () => ipcRenderer.invoke('hermes:cloud:status'),
