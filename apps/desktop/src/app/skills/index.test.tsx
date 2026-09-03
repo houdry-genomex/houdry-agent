@@ -42,6 +42,10 @@ vi.mock('@/store/notifications', () => ({
   notifyError: vi.fn()
 }))
 
+vi.mock('@/components/chat/code-editor', () => ({
+  CodeEditor: () => null
+}))
+
 // The vision detail navigates to Settings → Models via useNavigate; spy on it
 // so the deep-link target is assertable.
 const navigateSpy = vi.fn()
@@ -95,6 +99,9 @@ beforeEach(() => {
   // Single profile by default → the scope selector stays hidden (>1 gate),
   // so existing tests see unchanged single-profile behavior.
   getProfiles.mockResolvedValue({ profiles: [{ name: 'default', is_default: true }] })
+  // Drop leftover registry/roster bridges from sibling tests so this file
+  // never waits on an unresolved connections.list / getAgentRoster.
+  delete (window as { hermesDesktop?: unknown }).hermesDesktop
 })
 
 afterEach(() => {
@@ -133,7 +140,7 @@ describe('SkillsView toolset management', { timeout: 60_000 }, () => {
     // The label renders in both the row and the auto-selected detail header, so
     // assert via the switch's (emoji-stripped) accessible name and the absence
     // of the emoji rather than a single-match text lookup.
-    await screen.findByRole('switch', { name: 'Turn Cron Jobs toolset off' })
+    await screen.findAllByRole('switch', { name: 'Turn Cron Jobs toolset off' })
     expect(screen.queryByText(/⏰/)).toBeNull()
   })
 

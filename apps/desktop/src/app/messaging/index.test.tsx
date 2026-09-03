@@ -3,6 +3,9 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { MessagingView } from './index'
+import { $changeEventsAvailable, $pairingChangeTick, $platformsChangeTick } from '@/store/live-sync'
+import { $settingsScopeOverride } from '@/store/settings-scope'
 import type { MessagingPlatformInfo } from '@/types/hermes'
 
 const getMessagingPlatforms = vi.fn()
@@ -25,16 +28,29 @@ vi.mock('@/hermes', () => ({
     updateMessagingPlatform(id, body, profile)
 }))
 
-// Keep store/profile's side-effecting imports inert (pulled in via the shared
-// settings scope store) — same seam as store/profile.test.ts.
-vi.mock('@/store/gateway', () => ({
-  $gateway: { get: () => null, subscribe: () => () => {} },
-  ensureGatewayForAgent: vi.fn(async () => undefined),
-  ensureGatewayForProfile: vi.fn(async () => undefined),
-  openGatewayForProfile: vi.fn(async () => undefined)
+// SettingsProfileScope (and settings-scope) pull in store/profile. That module
+// has import-time gateway subscriptions; keep it out of this page-level test.
+vi.mock('@/store/profile', async () => {
+  const { atom } = await import('nanostores')
+
+  return {
+    $activeGatewayProfile: atom('default'),
+    $profiles: atom([]),
+    normalizeProfileKey: (name: string | null | undefined) => {
+      const value = (name ?? '').trim()
+
+      return value || 'default'
+    },
+    profileLabel: (profile: { display_name?: null | string; name: string }) =>
+      (profile.display_name ?? '').trim() || profile.name,
+    refreshProfiles: vi.fn(async () => [])
+  }
+})
+
+vi.mock('../settings/profile-scope', () => ({
+  SettingsProfileScope: () => null,
+  ScopeChip: () => null
 }))
-vi.mock('@/lib/query-client', () => ({ invalidateProfileScopedQueries: vi.fn() }))
-vi.mock('@/store/starmap', () => ({ resetStarmapGraph: vi.fn() }))
 
 vi.mock('@/lib/external-link', () => ({
   openExternalLink: (href: string) => openExternalLink(href)
@@ -66,7 +82,11 @@ function platform(patch: Partial<MessagingPlatformInfo> = {}): MessagingPlatform
 
 beforeEach(() => {
   updateMessagingPlatform.mockResolvedValue({ ok: true, platform: 'teams' })
+  getMessagingPlatforms.mockResolvedValue({ platforms: [platform()] })
   getPairing.mockResolvedValue({ approved: [], pending: [] })
+  $settingsScopeOverride.set(null)
+  $changeEventsAvailable.set(false)
+  delete (window as { hermesDesktop?: unknown }).hermesDesktop
 })
 
 afterEach(() => {
@@ -75,7 +95,6 @@ afterEach(() => {
 })
 
 async function renderMessaging() {
-  const { MessagingView } = await import('./index')
   let result: ReturnType<typeof render>
   await act(async () => {
     result = render(
@@ -90,9 +109,6 @@ async function renderMessaging() {
 
 describe('MessagingView profile scope', () => {
   it('follows the active profile instead of targeting primary when there is no override', async () => {
-    const { $settingsScopeOverride } = await import('@/store/settings-scope')
-
-    $settingsScopeOverride.set(null)
     getMessagingPlatforms.mockResolvedValue({ platforms: [platform()] })
 
     await renderMessaging()
@@ -204,8 +220,6 @@ describe('MessagingView pairing', () => {
     // connect/disconnect health via gateway_state.json, which a new pairing
     // request never moves. Riding it would leave someone invisible in the
     // pending list until an unrelated reconnect happened to fire.
-    const { $changeEventsAvailable, $pairingChangeTick, $platformsChangeTick } = await import('@/store/live-sync')
-
     getMessagingPlatforms.mockResolvedValue({ platforms: [platform()] })
     getPairing.mockResolvedValue({ approved: [], pending: [] })
 

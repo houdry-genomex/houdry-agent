@@ -352,13 +352,13 @@ describe('OAuth onboarding', () => {
   })
 
   it('clears stale readiness errors after OAuth succeeds and model confirmation is shown', async () => {
-    const model = 'anthropic/claude-opus-4.8'
+    const model = 'gpt-5.6-luna'
     const calls: { body?: unknown; path: string }[] = []
 
     installApiMock(async ({ body, path }: { body?: unknown; path: string }) => {
       calls.push({ body, path })
 
-      if (path === '/api/providers/oauth/nous/submit') {
+      if (path === '/api/providers/oauth/azure/submit') {
         return { ok: true, status: 'approved' }
       }
 
@@ -366,8 +366,8 @@ describe('OAuth onboarding', () => {
         return {
           providers: [
             {
-              name: 'Nous Portal',
-              slug: 'nous',
+              name: 'Azure OpenAI',
+              slug: 'azure',
               models: [model]
             }
           ]
@@ -375,11 +375,11 @@ describe('OAuth onboarding', () => {
       }
 
       if (path.startsWith('/api/model/recommended-default?')) {
-        return { provider: 'nous', model, free_tier: false }
+        return { provider: 'azure', model, free_tier: false }
       }
 
       if (path === '/api/model/set') {
-        return { ok: true, provider: 'nous', model, gateway_tools: [] }
+        return { ok: true, provider: 'azure', model, gateway_tools: [] }
       }
 
       throw new Error(`unexpected api path: ${path}`)
@@ -395,7 +395,7 @@ describe('OAuth onboarding', () => {
       }
 
       if (method === 'setup.runtime_check') {
-        expect(params).toEqual({ provider: 'nous' })
+        expect(params).toEqual({ provider: 'azure' })
 
         return { ok: true } as never
       }
@@ -407,7 +407,7 @@ describe('OAuth onboarding', () => {
       baseState({
         flow: {
           status: 'awaiting_user',
-          provider: makeOAuthProvider('nous', 'Nous Portal'),
+          provider: makeOAuthProvider('azure', 'Azure OpenAI'),
           start: {
             auth_url: 'https://portal.example/auth',
             expires_in: 600,
@@ -417,7 +417,7 @@ describe('OAuth onboarding', () => {
           code: 'fresh-code'
         },
         reason:
-          'No access token found for Nous Portal login. setup.status reports configured credentials, but runtime resolution still failed.',
+          'No access token found for Azure OpenAI login. setup.status reports configured credentials, but runtime resolution still failed.',
         requested: true
       })
     )
@@ -429,7 +429,7 @@ describe('OAuth onboarding', () => {
     expect(state.flow.status).toBe('confirming_model')
 
     if (state.flow.status === 'confirming_model') {
-      expect(state.flow.label).toBe('Nous Portal')
+      expect(state.flow.label).toBe('Azure OpenAI')
       expect(state.flow.currentModel).toBe(model)
     }
 
@@ -445,24 +445,24 @@ describe('OAuth onboarding', () => {
   })
 
   it('does not advance when the default model assignment is not persisted', async () => {
-    const model = 'openai/gpt-5.5-pro'
+    const model = 'gpt-5.6-luna'
     installApiMock(async ({ path }: { path: string }) => {
-      if (path === '/api/providers/oauth/nous/submit') {
+      if (path === '/api/providers/oauth/azure/submit') {
         return { ok: true, status: 'approved' }
       }
 
       if (path.startsWith('/api/model/options')) {
-        return { providers: [{ name: 'Nous Portal', slug: 'nous', models: [model] }] }
+        return { providers: [{ name: 'Azure OpenAI', slug: 'azure', models: [model] }] }
       }
 
       if (path.startsWith('/api/model/recommended-default?')) {
-        return { provider: 'nous', model, free_tier: false }
+        return { provider: 'azure', model, free_tier: false }
       }
 
       if (path === '/api/model/set') {
         return {
           ok: false,
-          provider: 'nous',
+          provider: 'azure',
           model,
           confirm_required: true,
           confirm_message: 'Confirm this expensive model.'
@@ -485,7 +485,7 @@ describe('OAuth onboarding', () => {
       baseState({
         flow: {
           status: 'awaiting_user',
-          provider: makeOAuthProvider('nous', 'Nous Portal'),
+          provider: makeOAuthProvider('azure', 'Azure OpenAI'),
           start: {
             auth_url: 'https://portal.example/auth',
             expires_in: 600,
