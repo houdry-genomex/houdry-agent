@@ -127,6 +127,7 @@ describe('knowledge home', () => {
   it('creates a markdown note and rejects an unknown category', () => {
     const home = tmpHome()
     const io = createNodeKnowledgeHomeFs()
+
     const note = createKnowledgeNote({
       category: 'safety',
       createId: () => 'note-1',

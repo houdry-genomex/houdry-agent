@@ -37,6 +37,7 @@ async function defaultLoopback(): Promise<string | null> {
         return false
       }
     }
+
     const hit = await scanLocalFabric(
       baseUrl => validateProviderCredential('OPENAI_BASE_URL', baseUrl),
       isFabric

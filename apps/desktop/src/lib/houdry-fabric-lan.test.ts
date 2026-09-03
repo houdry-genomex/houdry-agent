@@ -103,6 +103,7 @@ describe('uniqueFabricLan', () => {
       openai: true,
       url: 'http://192.168.29.179:8090'
     })
+
     const wsl = fromWifiAdvertise({
       api: 'http://172.23.96.1:8090/v1',
       auth: false,

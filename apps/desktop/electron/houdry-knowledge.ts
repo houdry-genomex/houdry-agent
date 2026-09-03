@@ -85,6 +85,7 @@ export function knowledgeRoot(hermesHome: string, io: Pick<KnowledgeHomeFs, 'joi
 export function knowledgeSourceDirs(hermesHome: string, io: Pick<KnowledgeHomeFs, 'join' | 'mkdirp'>): string {
   const root = knowledgeRoot(hermesHome, io)
   io.mkdirp(root)
+
   for (const category of KNOWLEDGE_CATEGORIES) {
     io.mkdirp(io.join(root, 'sources', category))
   }
@@ -159,11 +160,13 @@ function emptyIndex(): KnowledgeIndex {
 function parseIndex(raw: string): KnowledgeIndex {
   try {
     const parsed = JSON.parse(raw) as Partial<KnowledgeIndex>
+
     if (parsed?.version !== KNOWLEDGE_INDEX_VERSION || !Array.isArray(parsed.documents)) {
       return emptyIndex()
     }
 
     const documents: KnowledgeDocument[] = []
+
     for (const item of parsed.documents) {
       if (!item || typeof item !== 'object') {
         continue
@@ -195,6 +198,7 @@ function parseIndex(raw: string): KnowledgeIndex {
 
 export function generateMountAgentsMarkdown(documents: readonly KnowledgeDocument[]): string {
   const withRules = documents.filter(doc => doc.rules.trim())
+
   const rulesBlock =
     withRules.length === 0
       ? '_No standing rules yet. Add them next to each SOP in Knowledge base._'
@@ -240,6 +244,7 @@ ${catalog}
 
 export function generateHomeAgentsSection(documents: readonly KnowledgeDocument[]): string {
   const withRules = documents.filter(doc => doc.rules.trim())
+
   const rules =
     withRules.length === 0
       ? 'No standing SOP rules yet. When the user adds them in Knowledge base, follow them exactly.'
@@ -310,6 +315,7 @@ function indexPath(root: string, io: KnowledgeHomeFs): string {
 
 function loadIndex(root: string, io: KnowledgeHomeFs): KnowledgeIndex {
   const file = indexPath(root, io)
+
   if (!io.exists(file) || !io.isFile(file)) {
     return emptyIndex()
   }
@@ -332,6 +338,7 @@ function walkFiles(dir: string, root: string, io: KnowledgeHomeFs, acc: string[]
     }
 
     const full = io.join(dir, name)
+
     if (io.isDir(full)) {
       walkFiles(full, root, io, acc, depth + 1)
     } else if (io.isFile(full)) {
@@ -342,6 +349,7 @@ function walkFiles(dir: string, root: string, io: KnowledgeHomeFs, acc: string[]
 
 function categoryFromRelative(relativePath: string): KnowledgeCategory | null {
   const parts = toPosixRelative(relativePath).split('/')
+
   if (parts[0] !== 'sources' || !parts[1] || !isKnowledgeCategory(parts[1])) {
     return null
   }
@@ -371,14 +379,17 @@ function reconcileDocuments(
 
     const relativePath = toPosixRelative(io.relative(root, full))
     const category = categoryFromRelative(relativePath)
+
     if (!category) {
       continue
     }
 
     const existing = byRel.get(relativePath)
+
     if (existing) {
       kept.push(existing)
       byRel.delete(relativePath)
+
       continue
     }
 
@@ -399,11 +410,14 @@ function reconcileDocuments(
 
   const seen = new Set<string>()
   const documents: KnowledgeDocument[] = []
+
   for (const doc of kept) {
     if (seen.has(doc.id)) {
       changed = true
+
       continue
     }
+
     seen.add(doc.id)
     documents.push(doc)
   }
@@ -471,12 +485,14 @@ export function importKnowledgeFiles({
 
     const filename = sanitizeFilename(io.basename(source))
     const dest = uniqueDest(destDir, filename, io)
+
     if (!isInsideRoot(snapshot.root, dest, io)) {
       throw new Error('Refusing to import outside the knowledge folder')
     }
 
     io.copyFile(source, dest)
     const relativePath = toPosixRelative(io.relative(snapshot.root, dest))
+
     const doc: KnowledgeDocument = {
       addedAt: stamp,
       category: cat,
@@ -485,6 +501,7 @@ export function importKnowledgeFiles({
       rules: '',
       title: io.basename(dest)
     }
+
     documents.push(doc)
     added.push(doc)
   }
@@ -523,9 +540,11 @@ export function createKnowledgeNote({
     rules: clipRules(rules).trim(),
     title: trimmedTitle
   }
+
   const documents = [...snapshot.documents, doc].sort(
     (a, b) => a.title.localeCompare(b.title) || a.relativePath.localeCompare(b.relativePath)
   )
+
   saveIndex(snapshot.root, { version: KNOWLEDGE_INDEX_VERSION, documents }, io)
   persistKnowledgeContext(snapshot.root, documents, io, hermesHome)
 
@@ -543,16 +562,19 @@ export function updateKnowledgeDocument({
 }: KnowledgeIo & { id: string; rules?: string; title?: string }): KnowledgeDocument {
   const snapshot = snapshotKnowledge({ createId, fs: io, hermesHome, now })
   const index = snapshot.documents.findIndex(doc => doc.id === id)
+
   if (index < 0) {
     throw new Error('Document not found')
   }
 
   const current = snapshot.documents[index]
+
   const next: KnowledgeDocument = {
     ...current,
     rules: rules === undefined ? current.rules : clipRules(rules),
     title: title === undefined ? current.title : title.trim() || current.title
   }
+
   const documents = snapshot.documents.slice()
   documents[index] = next
   saveIndex(snapshot.root, { version: KNOWLEDGE_INDEX_VERSION, documents }, io)
@@ -570,11 +592,13 @@ export function removeKnowledgeDocument({
 }: KnowledgeIo & { id: string }): void {
   const snapshot = snapshotKnowledge({ createId, fs: io, hermesHome, now })
   const doc = snapshot.documents.find(item => item.id === id)
+
   if (!doc) {
     throw new Error('Document not found')
   }
 
   const full = io.join(snapshot.root, ...doc.relativePath.split('/'))
+
   if (io.exists(full) && isInsideRoot(snapshot.root, full, io)) {
     io.removeFile(full)
   }

@@ -6,8 +6,8 @@ import { ErrorIcon } from '@/components/ui/error-state'
 import { Loader } from '@/components/ui/loader'
 import { LogView } from '@/components/ui/log-view'
 import type { DesktopConnectionConfig } from '@/global'
-import { isBootstrapBootError } from '@/lib/bootstrap-boot'
 import { useI18n } from '@/i18n'
+import { isBootstrapBootError } from '@/lib/bootstrap-boot'
 import { openExternalLink } from '@/lib/external-link'
 import { ChevronLeft, ExternalLink, FileText, Loader2, LogIn, RefreshCw, SlidersHorizontal, Wrench } from '@/lib/icons'
 import { $desktopBoot } from '@/store/boot'
@@ -63,6 +63,7 @@ export function BootFailureOverlay() {
 
   const visible =
     Boolean(boot.error) && !boot.running && !isBootstrapBootError(boot.error ?? '')
+
   // While first-run onboarding owns the picker/flow we let it surface its own
   // progress; the recovery overlay is for hard failures, which it covers via a
   // higher z-index regardless of onboarding state.

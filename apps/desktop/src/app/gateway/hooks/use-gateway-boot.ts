@@ -983,6 +983,7 @@ export function useGatewayBoot({
         // rides out a full backend cold spawn, so it gets the shared 45s
         // backend-boot budget, not the 20s reconnect budget.
         const bootstrapInstallPending = Boolean(await desktop.isBootstrapInstallPending?.().catch(() => false))
+
         const conn = await withTimeout(
           desktop.getConnection(windowProfileOverride() ?? undefined),
           bootstrapInstallPending ? BOOTSTRAP_BOOT_WAIT_TIMEOUT_MS : BACKEND_BOOT_WAIT_TIMEOUT_MS,

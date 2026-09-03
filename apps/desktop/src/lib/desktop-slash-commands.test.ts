@@ -370,6 +370,7 @@ describe('rankSkillCommands', () => {
       { text: '/work' },
       { text: '/knowledge-search' }
     ]
+
     const skills = {
       '/manim-video': { usage: 0, origin: 'bundled' as const },
       '/document-analysis': { usage: 0, origin: 'bundled' as const },
