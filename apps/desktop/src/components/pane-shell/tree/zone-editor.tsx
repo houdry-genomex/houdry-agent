@@ -375,9 +375,8 @@ export function ZoneEditor() {
                 borderColor: `color-mix(in srgb, var(--ui-accent) ${selected ? 90 : 40}%, transparent)`
               }}
             >
-              {/* Quiet zone tag — the app's small-caps label voice, not a
-                  billboard number. */}
-              <span className="select-none text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-(--ui-text-tertiary)">
+              {/* Quiet zone tag — same medium sentence-case voice as pane tabs. */}
+              <span className="select-none text-[0.6875rem] font-medium text-(--ui-text-tertiary)">
                 {t.zones.zoneTag(zone.index + 1)}
               </span>
             </div>

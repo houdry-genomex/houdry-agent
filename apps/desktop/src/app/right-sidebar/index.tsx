@@ -82,6 +82,7 @@ export function RightSidebarPane({ onActivateFile, onActivateFolder }: RightSide
           ? 'border-r shadow-[inset_-0.0625rem_0_0_color-mix(in_srgb,white_18%,transparent)]'
           : 'border-l shadow-[inset_0.0625rem_0_0_color-mix(in_srgb,white_18%,transparent)]'
       )}
+      data-slot="files-rail"
     >
       <FilesystemTab
         canCollapse={canCollapse}
@@ -313,8 +314,8 @@ function FileTreeLoadingState() {
 }
 
 // Terse pane empty state ("No files" / "No diffs"): the panel label itself —
-// same uppercase/tracking + dither dot — just muted instead of theme-primary,
-// centered. Shared by the file tree and review panes so both read identically.
+// same SidebarPanelLabel voice, just muted, centered. Shared by the file tree
+// and review panes so both read identically.
 export function PaneEmptyState({ label }: { label: string }) {
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center px-4">
@@ -328,7 +329,7 @@ export function EmptyState({ body, title }: { body: string; title?: string }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-4 text-center">
       {title && (
-        <div className="text-[0.7rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground/75">{title}</div>
+        <div className="text-[0.7rem] font-medium text-muted-foreground/75">{title}</div>
       )}
       <div className="text-[0.68rem] leading-relaxed text-muted-foreground/65">{body}</div>
     </div>

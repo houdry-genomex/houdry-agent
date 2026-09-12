@@ -407,7 +407,7 @@ export const ja = defineLocale({
       backdropTitle: 'チャット背景',
       backdropDesc: '会話の背後に表示される淡い彫像の画像。',
       introSplashTitle: 'イントロ表示',
-      introSplashDesc: '空のチャットに表示されるワードマークとプロンプト。',
+      introSplashDesc: '空のチャットに表示される見出しとスタートカード。',
       reactionsTitle: 'メッセージリアクション',
       reactionsDesc:
         'iMessage風の絵文字タップバック — メッセージにリアクションでき、Houdryもあなたのメッセージにリアクションします。',
@@ -2580,6 +2580,7 @@ export const ja = defineLocale({
       yoloOff: 'YOLO オフ。Shift+クリックで全体に切り替え。',
       modelNone: 'なし',
       noModel: 'モデルなし',
+      modelAuto: '自動',
       switchModel: 'モデルを切り替え',
       openModelPicker: 'モデルピッカーを開く',
       modelPinned: '手動で固定中 — 新しいチャットは設定のデフォルトではなくこのモデルを使用します',

@@ -522,12 +522,8 @@ const ChatViewContent = memo(function ChatViewContent({
   // to send to until a retry rebinds one. Watch windows are pure spectators of a
   // subagent run driven elsewhere — no composer, transcript is read-only.
   const showChatBar = !loadingSession && !resumeExhausted && !isWatchWindow()
-  // A chat with nothing in it yet gives the composer the whole empty column, so
-  // it opens tall (see --composer-input-min-height under [data-chat-empty]) and
-  // reads as the thing to type into rather than a strip at the bottom. It drops
-  // back to one line the moment a transcript exists — from then on the room
-  // belongs to the conversation. Gated on !threadLoading so a session that is
-  // still hydrating doesn't flash tall and then collapse.
+  // Empty-chat chrome (slightly roomier composer padding). Gated on
+  // !threadLoading so a session that is still hydrating doesn't flash empty.
   const emptyChat = messagesEmpty && !threadLoading
   const threadKey = selectedSessionId || activeSessionId || (isRoutedSessionView ? location.pathname : 'new')
 

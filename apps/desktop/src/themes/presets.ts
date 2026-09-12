@@ -26,20 +26,18 @@ import type { DesktopTheme, DesktopThemeTypography } from './types'
 // Covers macOS, Windows, Linux, plus the `emoji` generic for anything else.
 export const EMOJI_FALLBACK = '"Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", emoji'
 
-// Inter first — Cursor-like UI sans. Segoe / SF remain as fallbacks until the
-// stylesheet loads (or when offline). Code/diffs stay on SYSTEM_MONO.
+// Inter first — Cursor-like UI sans, loaded from a local @font-face (see
+// styles.css). Segoe / SF remain as fallbacks if the file is missing. Code/diffs
+// stay on SYSTEM_MONO.
 const SYSTEM_SANS =
   'Inter, "Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif, ' +
   EMOJI_FALLBACK
 
 const SYSTEM_MONO = 'Menlo, Monaco, "SF Mono", "Courier Prime", monospace, ' + EMOJI_FALLBACK
 
-const INTER_FONT_URL = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'
-
 export const DEFAULT_TYPOGRAPHY: DesktopThemeTypography = {
   fontSans: SYSTEM_SANS,
-  fontMono: SYSTEM_MONO,
-  fontUrl: INTER_FONT_URL
+  fontMono: SYSTEM_MONO
 }
 
 /**
@@ -704,8 +702,7 @@ export const midnightTheme: DesktopTheme = {
     userBubbleBorder: '#242466'
   },
   typography: {
-    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap'
+    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`
   }
 }
 
@@ -741,7 +738,7 @@ export const emberTheme: DesktopTheme = {
   },
   typography: {
     fontMono: `"IBM Plex Mono", ${SYSTEM_MONO}`,
-    fontUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&display=swap'
+    fontUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&display=swap'
   }
 }
 

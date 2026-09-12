@@ -1,6 +1,18 @@
-import { type CSSProperties, useState } from 'react'
+import { useState } from 'react'
 
+import { requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
+import { triggerHaptic } from '@/lib/haptics'
+import {
+  BarChart3,
+  FileText,
+  type IconComponent,
+  iconSize,
+  MessageCode,
+  NotebookTabs,
+  Search
+} from '@/lib/icons'
 import { capitalize, normalize } from '@/lib/text'
+import { cn } from '@/lib/utils'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
 
@@ -144,8 +156,6 @@ function pickCopy(copies: IntroCopy[], seed = 0): IntroCopy {
   return copies[Math.abs(seed) % copies.length] || FALLBACK_COPY[0]
 }
 
-const WORDMARK = 'HOUDRY AGENT'
-
 function resolveCopy(personality?: string, seed?: number): IntroCopy {
   const personalityKey = normalizeKey(personality)
 
@@ -156,28 +166,68 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
   return pickCopy(copies, seed)
 }
 
+type IntroTileAccent = 'accent' | 'mix' | 'primary' | 'soft'
+
+const STARTER_TILES: {
+  accent: IntroTileAccent
+  command: string
+  icon: IconComponent
+  label: string
+}[] = [
+  { accent: 'primary', command: 'document-analysis', icon: FileText, label: 'Analyze an inspection document' },
+  { accent: 'accent', command: 'procedure-lookup', icon: NotebookTabs, label: 'Look up an inspection procedure' },
+  { accent: 'mix', command: 'engineering-calculation', icon: BarChart3, label: 'Run an engineering calculation' },
+  { accent: 'soft', command: 'knowledge-search', icon: Search, label: 'Search the knowledge base' }
+]
+
+function insertStarter(command: string) {
+  triggerHaptic('tap')
+  requestComposerInsert(`/${command}`, { mode: 'prefix' })
+  requestComposerFocus('active')
+}
+
 export function Intro({ personality, seed }: IntroProps) {
   const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
   const copy = resolveCopy(personality, mountSeed + (seed ?? 0))
 
   return (
     <div
-      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center sm:px-6 lg:px-8"
       data-slot="aui_intro"
     >
-      <div className="w-full min-w-0">
-        <p
-          aria-label={WORDMARK}
-          className="fit-text mx-auto mb-1 w-[calc(100%-1rem)] font-['Collapse'] font-bold uppercase leading-[0.9] tracking-[0.08em] text-midground mix-blend-plus-lighter dark:text-foreground/90"
-          style={{ '--fit-min': '2.75rem' } as CSSProperties}
-        >
-          <span>
-            <span>{WORDMARK}</span>
-          </span>
-          <span aria-hidden="true">{WORDMARK}</span>
-        </p>
+      <div className="flex w-full min-w-0 flex-col items-center">
+        <MessageCode aria-hidden className="mb-5 size-8 text-(--ui-text-tertiary)" strokeWidth={1.35} />
 
-        <p className="m-0 text-center leading-normal tracking-tight">{copy.body}</p>
+        <h1 className="mx-auto mb-10 w-[calc(100%-1rem)] max-w-[28rem] sm:max-w-[36rem]" data-slot="aui_intro-title">
+          {copy.headline}
+        </h1>
+
+        <div className="pointer-events-auto grid w-full max-w-[44rem] grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
+          {STARTER_TILES.map(tile => {
+            const Icon = tile.icon
+
+            return (
+              <button
+                className={cn(
+                  'flex min-h-[8.25rem] flex-col items-start justify-between rounded-2xl border border-(--ui-stroke-tertiary)',
+                  'px-3.5 py-3.5 text-left',
+                  'focus-visible:border-(--ui-stroke-secondary) focus-visible:outline-none focus-visible:ring-2',
+                  'focus-visible:ring-(--theme-primary)/35'
+                )}
+                data-accent={tile.accent}
+                data-slot="aui_intro-card"
+                key={tile.command}
+                onClick={() => insertStarter(tile.command)}
+                type="button"
+              >
+                <Icon className={cn(iconSize.xl, 'shrink-0 text-(--intro-card-icon)')} strokeWidth={1.5} />
+                <span className="text-[0.8125rem] font-normal leading-snug tracking-[-0.01em] text-(--ui-text-secondary)">
+                  {tile.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

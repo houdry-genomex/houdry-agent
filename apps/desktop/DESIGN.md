@@ -69,6 +69,18 @@ replace the foreground transcript or steal focus.
 
 ## Surfaces & elevation
 
+Dark chrome uses an **internal glass material** (charcoal atmosphere + frosted
+panels). It is distinct from Settings → Appearance → Window Translucency, which
+lets the *desktop* show through the window. Atmosphere washes still tint `#root`
+in dark so a 95% native tint does not read as flat black; field-token thinning
+only runs when native glass/clear is off so the two materials do not stack fill.
+
+Tokens live in `src/styles.css` on `.dark`: `--glass-fill`, `--glass-stroke`,
+`--glass-blur`, `--glass-saturate`, `--glass-highlight`, `--glass-shadow`.
+Field surfaces (`--ui-chat-surface-background`, editor) go transparent so one
+painter (`<html>`) owns the atmosphere; sidebar, composer, and empty-chat
+tiles frost over it. Do not add per-surface `backdrop-filter` one-offs.
+
 Floating panels (base `Dialog`, route overlays, boot/install/update surfaces,
 model-picker, onboarding, prompt overlays, notifications) use:
 
@@ -91,8 +103,15 @@ for call-site shadow or border inventions.
 - **`--radius-scalar`** in `src/styles.css` is the one knob for surface
   rounding. `rounded-sm`/`md`/`lg`/`xl`/`2xl` scale from it. Do not reintroduce
   `rounded-[2.5px]` (or similar) on chrome that should follow the token.
-- Default UI sans is **Inter** (then Segoe / SF / system). Code, diffs, and
-  terminals stay mono. The empty-state wordmark stays `Collapse`.
+- Default UI sans is **Inter** at regular (400) and medium (500), then Segoe /
+  SF / system. Tracking is slightly open; default UI weight caps at 600. Code,
+  diffs, and terminals stay mono. Pane tabs, date dividers, and empty chat are
+  sentence case — not uppercase condensed chrome. Empty chat is a display
+  headline (`--ui-text-primary`, optically tight tracking) plus four starter
+  tiles that insert slash skills — not a muted instructional paragraph.
+  Starter-tile icons mix the theme primary with distinct oklch hues so they
+  stay readable on grayscale skins without copying another product's palette.
+  `Collapse` is only for the sanctioned `BrandMark` tile.
 
 ## Stroke & color tokens
 

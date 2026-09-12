@@ -210,8 +210,8 @@ interface PaneTabLabelProps extends React.ComponentProps<'button'> {
   as?: 'button' | 'span'
 }
 
-/** Truncating label inside a `PaneTab`. `className` merges into the text span
- *  (e.g. `normal-case tracking-normal` for filenames). */
+/** Truncating label inside a `PaneTab`. Sentence case, medium — Cursor-like
+ *  chrome, not 9px uppercase. `className` merges into the text span. */
 export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(function PaneTabLabel(
   { as = 'span', className, children, ...props },
   ref
@@ -224,9 +224,7 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
       ref={ref}
       {...props}
     >
-      <span className={cn('block min-w-0 truncate text-[9px] font-medium tracking-wide uppercase', className)}>
-        {children}
-      </span>
+      <span className={cn('block min-w-0 truncate text-[0.6875rem] font-medium', className)}>{children}</span>
     </Comp>
   )
 })

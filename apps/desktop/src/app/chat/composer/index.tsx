@@ -1280,6 +1280,7 @@ export function ChatBar({
                     composerFill,
                     composerSurfaceGlass
                   )}
+                  data-slot="composer-fill"
                 />
                 <CodingStatusRow
                   onBranchOff={handleBranchOff}
@@ -1395,6 +1396,7 @@ export function ChatBarFallback() {
             composerFill,
             composerSurfaceGlass
           )}
+          data-slot="composer-fill"
         />
       </div>
     </div>

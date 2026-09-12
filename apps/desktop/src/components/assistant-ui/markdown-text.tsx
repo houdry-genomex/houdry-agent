@@ -543,13 +543,13 @@ function MarkdownTextSurface({
     () =>
       ({
         h1: ({ className, ...props }: ComponentProps<'h1'>) => (
-          <h1 className={cn('my-1 font-semibold', HEADING_SIZES.h1, className)} {...props} />
+          <h1 className={cn('my-1 font-medium', HEADING_SIZES.h1, className)} {...props} />
         ),
         h2: ({ className, ...props }: ComponentProps<'h2'>) => (
-          <h2 className={cn('my-1 font-semibold', HEADING_SIZES.h2, className)} {...props} />
+          <h2 className={cn('my-1 font-medium', HEADING_SIZES.h2, className)} {...props} />
         ),
         h3: ({ className, ...props }: ComponentProps<'h3'>) => (
-          <h3 className={cn('my-1 font-semibold', HEADING_SIZES.h3, className)} {...props} />
+          <h3 className={cn('my-1 font-medium', HEADING_SIZES.h3, className)} {...props} />
         ),
         h4: ({ className, ...props }: ComponentProps<'h4'>) => (
           <h4 className={cn('my-1 font-semibold', HEADING_SIZES.h4, className)} {...props} />

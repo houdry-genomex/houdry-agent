@@ -298,9 +298,9 @@ async function readTextPreview(filePath: string) {
 // our components keep typography simple and route fenced code through Shiki
 // without the library's copy/download/fullscreen chrome.
 const MD_TAG_CLASSES = {
-  h1: 'mb-3 mt-6 text-3xl font-bold leading-tight tracking-tight first:mt-0',
-  h2: 'mb-2.5 mt-5 text-2xl font-semibold leading-snug tracking-tight first:mt-0',
-  h3: 'mb-2 mt-4 text-xl font-semibold leading-snug first:mt-0',
+  h1: 'mb-3 mt-6 text-3xl font-medium leading-tight tracking-tight first:mt-0',
+  h2: 'mb-2.5 mt-5 text-2xl font-medium leading-snug tracking-tight first:mt-0',
+  h3: 'mb-2 mt-4 text-xl font-medium leading-snug first:mt-0',
   h4: 'mb-2 mt-3 text-base font-semibold leading-snug first:mt-0',
   p: 'mb-4 leading-relaxed text-foreground last:mb-0',
   ul: 'mb-4 list-disc pl-6 marker:text-muted-foreground/70 last:mb-0',
@@ -309,7 +309,7 @@ const MD_TAG_CLASSES = {
   blockquote: 'mb-4 border-l-2 border-border pl-3 text-muted-foreground italic last:mb-0',
   pre: 'mb-4 overflow-hidden rounded-lg border border-border bg-card font-mono text-xs leading-relaxed last:mb-0 [&_pre]:m-0 [&_pre]:overflow-x-auto [&_pre]:bg-transparent! [&_pre]:p-3 [&_pre]:font-mono',
   hr: 'my-6 border-border',
-  th: 'px-3 py-2 text-left text-sm font-semibold text-foreground',
+  th: 'px-3 py-2 text-left text-sm font-medium text-foreground',
   td: 'px-3 py-2 align-top text-sm leading-relaxed',
   thead: 'bg-muted/35 text-muted-foreground'
 } as const

@@ -1,3 +1,7 @@
+import { existsSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -42,7 +46,22 @@ describe('theme typography emoji fallback (#40364)', () => {
 describe('default UI typography', () => {
   it('prefers Inter for chrome and chat, keeping emoji fallback', () => {
     expect(DEFAULT_TYPOGRAPHY.fontSans.startsWith('Inter,')).toBe(true)
-    expect(DEFAULT_TYPOGRAPHY.fontUrl).toMatch(/family=Inter/)
+    expect(DEFAULT_TYPOGRAPHY.fontSans).toContain(EMOJI_FALLBACK)
+    expect(DEFAULT_TYPOGRAPHY.fontUrl).toBeUndefined()
+  })
+
+  it('does not load Inter from Google Fonts', () => {
+    expect(DEFAULT_TYPOGRAPHY.fontUrl).toBeUndefined()
+    for (const theme of BUILTIN_THEME_LIST) {
+      const url = theme.typography?.fontUrl
+      if (!url) continue
+      expect(url).not.toMatch(/family=Inter/)
+    }
+  })
+
+  it('ships a local Inter variable font for air-gapped loads', () => {
+    const fontPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../fonts/InterVariable.woff2')
+    expect(existsSync(fontPath)).toBe(true)
   })
 })
 

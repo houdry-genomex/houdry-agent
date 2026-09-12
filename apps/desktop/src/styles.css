@@ -67,6 +67,17 @@
   src: url('../../../node_modules/@nous-research/ui/dist/fonts/Collapse-Bold.woff2') format('woff2');
 }
 
+/* Inter — bundled UI sans (SIL OFL) so chrome/chat stay Inter air-gapped.
+   Variable axis covers 400–700; default UI stays 400/500, with 600 as the cap
+   and 700 reserved for rare emphasis. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('./fonts/InterVariable.woff2') format('woff2');
+}
+
 /* JetBrains Mono — bundled terminal font (Apache-2.0) so bold/italic share the
    regular face's metrics instead of squeezing against a system fallback. */
 @font-face {
@@ -446,8 +457,10 @@
        default: chrome, sidebar and controls read a step larger without
        re-tuning any individual component. */
     --dt-base-size: 1.0625rem;
-    --dt-line-height: 1.5;
-    --dt-letter-spacing: -0.011em;
+    --dt-line-height: 1.55;
+    --dt-letter-spacing: 0.005em;
+    --dt-font-weight-ui: 400;
+    --dt-font-weight-emphasis: 500;
     --dt-spacing-mul: 1;
 
     --radius: 0.75rem;
@@ -577,6 +590,18 @@
        touch — still clearly a surface, no longer the brightest thing in the
        transcript. Derived from the card so every skin follows its own seed. */
     --ui-widget-surface-background: color-mix(in srgb, var(--ui-bg-editor) 88%, #000);
+
+    /* Internal dark glass (not Window Translucency). Frosted panels over a
+       charcoal atmosphere. Native `[data-hermes-glass]` still owns see-through
+       desktop and disables this layer so the two materials don't stack. */
+    --glass-blur: 1.25rem;
+    --glass-saturate: 1.38;
+    --glass-fill: color-mix(in srgb, var(--ui-base) 4.5%, color-mix(in srgb, var(--ui-bg-chrome) 36%, transparent));
+    --glass-fill-hover: color-mix(in srgb, var(--ui-base) 7%, color-mix(in srgb, var(--ui-bg-chrome) 48%, transparent));
+    --glass-stroke: color-mix(in srgb, var(--ui-base) 10%, transparent);
+    --glass-stroke-strong: color-mix(in srgb, var(--ui-base) 16%, transparent);
+    --glass-highlight: inset 0 1px 0 color-mix(in srgb, var(--ui-base) 11%, transparent);
+    --glass-shadow: 0 0.5rem 1.75rem color-mix(in srgb, #000 22%, transparent);
   }
 
   /* ── Window glass (Settings → Appearance → Window Translucency: Glass) ──
@@ -723,6 +748,57 @@
     transition: opacity 160ms cubic-bezier(0.32, 0.72, 0, 1);
   }
 
+  /* ── Dark atmosphere + frosted chrome ──
+     Charcoal stays the foundation. Soft oklch washes live on #root as
+     background-image so they tint both the opaque chrome (glass off) and the
+     native vibrancy field (glass on) without a stacking-context pseudo.
+     Field-token thinning only runs when native glass/clear is off. */
+  html.dark #root {
+    background-attachment: fixed;
+    background-image:
+      radial-gradient(ellipse 70% 55% at 6% -12%, oklch(0.38 0.05 252 / 0.28), transparent 58%),
+      radial-gradient(ellipse 60% 48% at 102% 8%, oklch(0.36 0.055 292 / 0.2), transparent 55%),
+      radial-gradient(ellipse 55% 42% at 78% 118%, oklch(0.34 0.036 312 / 0.16), transparent 52%),
+      radial-gradient(ellipse 48% 36% at 4% 108%, oklch(0.36 0.028 42 / 0.1), transparent 50%);
+  }
+
+  html.dark:not([data-hermes-glass]):not([data-hermes-clear]) {
+    --ui-chat-surface-background: transparent;
+    --ui-editor-surface-background: transparent;
+    --ui-sidebar-surface-background: var(--glass-fill);
+    background-color: var(--ui-bg-chrome);
+  }
+
+  html.dark:not([data-hermes-glass]):not([data-hermes-clear]) body {
+    background: transparent;
+  }
+
+  html.dark:not([data-hermes-glass]):not([data-hermes-clear]) #root {
+    background-color: var(--ui-bg-chrome);
+  }
+
+  html.dark:not([data-hermes-glass]):not([data-hermes-clear]) [data-contrib-shell],
+  html.dark:not([data-hermes-glass]):not([data-hermes-clear]) [data-slot='sidebar-wrapper'] {
+    background-color: transparent !important;
+  }
+
+  html.dark [data-slot='sidebar'],
+  html.dark [data-slot='files-rail'],
+  html.dark [data-slot='statusbar'] {
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    box-shadow: var(--glass-highlight);
+  }
+
+  html.dark .titlebar-icon-button {
+    color: color-mix(in srgb, var(--ui-text-primary) 68%, transparent);
+  }
+
+  html.dark .titlebar-icon-button:hover,
+  html.dark .titlebar-icon-button:focus-visible {
+    color: var(--ui-text-primary);
+  }
+
   * {
     box-sizing: border-box;
     border-color: var(--dt-border);
@@ -748,6 +824,7 @@
     color: var(--dt-foreground);
     font-family: var(--dt-font-sans);
     font-size: 0.875rem;
+    font-weight: var(--dt-font-weight-ui, 400);
     line-height: var(--dt-line-height, 1.55);
     letter-spacing: var(--dt-letter-spacing, 0);
     -webkit-user-select: none;
@@ -1606,12 +1683,55 @@ body.guest-pointer-lock :is(webview, iframe) {
   max-width: var(--composer-width);
 }
 
-[data-slot='aui_intro'] p:last-child {
-  max-width: 34rem;
-  margin-inline: auto;
-  color: var(--ui-text-tertiary);
-  font-size: 0.875rem;
-  line-height: 1.45;
+/* Display headline: primary color, optical tracking, not the muted body dump. */
+[data-slot='aui_intro-title'] {
+  color: var(--ui-text-primary);
+  font-size: 1.75rem;
+  font-weight: var(--dt-font-weight-emphasis, 500);
+  letter-spacing: -0.022em;
+  line-height: 1.22;
+  text-wrap: balance;
+}
+
+@media (min-width: 640px) {
+  [data-slot='aui_intro-title'] {
+    font-size: 2rem;
+  }
+}
+
+[data-slot='aui_intro-card'] {
+  --intro-card-icon: color-mix(in oklch, var(--theme-primary) 32%, oklch(0.74 0.085 250));
+  background: var(--glass-fill, color-mix(in srgb, var(--ui-bg-elevated) 62%, transparent));
+  backdrop-filter: blur(var(--glass-blur, 1.25rem)) saturate(var(--glass-saturate, 1.38));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 1.25rem)) saturate(var(--glass-saturate, 1.38));
+  border-color: var(--glass-stroke, var(--ui-stroke-tertiary));
+  box-shadow: var(--glass-highlight, inset 0 1px 0 color-mix(in srgb, var(--ui-base) 8%, transparent));
+  transition:
+    transform 200ms ease,
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease;
+}
+
+[data-slot='aui_intro-card']:hover {
+  background: var(--glass-fill-hover, color-mix(in srgb, var(--ui-bg-elevated) 78%, transparent));
+  border-color: var(--glass-stroke-strong, var(--ui-stroke-secondary));
+  box-shadow:
+    var(--glass-highlight, inset 0 1px 0 color-mix(in srgb, var(--ui-base) 8%, transparent)),
+    var(--glass-shadow, 0 0.5rem 1.75rem color-mix(in srgb, #000 18%, transparent));
+  transform: translateY(-2px);
+}
+
+[data-slot='aui_intro-card'][data-accent='accent'] {
+  --intro-card-icon: color-mix(in oklch, var(--theme-primary) 32%, oklch(0.72 0.09 292));
+}
+
+[data-slot='aui_intro-card'][data-accent='mix'] {
+  --intro-card-icon: color-mix(in oklch, var(--theme-primary) 32%, oklch(0.74 0.08 164));
+}
+
+[data-slot='aui_intro-card'][data-accent='soft'] {
+  --intro-card-icon: color-mix(in oklch, var(--theme-primary) 32%, oklch(0.76 0.085 55));
 }
 
 .fit-text {
@@ -1752,6 +1872,16 @@ body.guest-pointer-lock :is(webview, iframe) {
   border-color: var(--ui-stroke-secondary) !important;
 }
 
+.dark [data-slot='composer-surface'] {
+  border-color: var(--glass-stroke) !important;
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+}
+
+.dark [data-slot='composer-fill'] {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
 [data-slot='composer-fade'] {
   min-height: 2.375rem;
 }
@@ -1761,19 +1891,13 @@ body.guest-pointer-lock :is(webview, iframe) {
   font-size: var(--conversation-text-font-size);
 }
 
-/* A chat with no transcript yet: the composer opens five lines tall instead of
-   one. Nothing is competing for the column, and a new session is the moment the
-   user has the most to type — a single-line strip at the bottom of an empty page
-   reads like a status bar rather than the prompt.
-   `data-chat-empty` clears as soon as a message exists, so the box returns to its
-   normal one-line height for the rest of the conversation.
-
-   Expressed in em, not rem, so it stays exactly five lines if the composer's font
-   size changes: 1.5 is the `leading-normal` the input carries. Only min-height
-   moves — max-height, padding and the auto-grow behaviour are untouched, and the
-   thread's bottom clearance follows because it is measured from the real DOM. */
+/* Empty chat keeps the same compact one-line composer as a live thread
+   (Cursor-like). It grows with wrapped text via the stacked layout, not by
+   reserving five blank lines that read as a hollow box. A little extra pad
+   so the empty prompt doesn't collapse into a status-bar strip. */
 [data-chat-empty] {
-  --composer-input-min-height: calc(5 * 1.5em);
+  --composer-surface-pad-x: 0.75rem;
+  --composer-surface-pad-y: 0.5rem;
 }
 
 [data-slot='composer-rich-input']:is(:empty, [data-empty])::before {
@@ -1796,8 +1920,16 @@ body.guest-pointer-lock :is(webview, iframe) {
   --composer-fill: color-mix(in srgb, var(--dt-card) 72%, transparent);
 }
 
+.dark [data-slot='composer-root'] {
+  --composer-fill: color-mix(in srgb, var(--ui-base) 5.5%, color-mix(in srgb, var(--dt-card) 46%, transparent));
+}
+
 [data-slot='composer-root'][data-thread-scrolled-up] {
   --composer-fill: color-mix(in srgb, var(--dt-card) 48%, transparent);
+}
+
+.dark [data-slot='composer-root'][data-thread-scrolled-up] {
+  --composer-fill: color-mix(in srgb, var(--ui-base) 4%, color-mix(in srgb, var(--dt-card) 30%, transparent));
 }
 
 /* Tool/thinking blocks now live at message-text alignment (no leading

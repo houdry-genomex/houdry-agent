@@ -2583,6 +2583,7 @@ export interface Translations {
       yoloOff: string
       modelNone: string
       noModel: string
+      modelAuto: string
       switchModel: string
       openModelPicker: string
       modelPinned: string

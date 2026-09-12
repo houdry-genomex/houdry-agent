@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { currentPickerSelection, displayModelName, formatModelStatusLabel } from './model-status-label'
+import { currentPickerSelection, displayModelName, formatModelStatusLabel, isComposerAutoLabel } from './model-status-label'
 import { reasoningEffortLabel } from './reasoning-effort'
 
 describe('model-status-label', () => {
@@ -44,6 +44,14 @@ describe('model-status-label', () => {
 
   it('returns just the placeholder name when there is no model', () => {
     expect(formatModelStatusLabel('')).toBe('No model')
+  })
+
+  it('marks the composer pill Auto for default routing and the auto model id', () => {
+    expect(isComposerAutoLabel('gpt-5.6-luna', { kind: 'primary', source: 'default' })).toBe(true)
+    expect(isComposerAutoLabel('gpt-5.6-luna', { kind: 'primary', source: '' })).toBe(true)
+    expect(isComposerAutoLabel('auto', { kind: 'primary', source: 'manual' })).toBe(true)
+    expect(isComposerAutoLabel('gpt-5.6-luna', { kind: 'primary', source: 'manual' })).toBe(false)
+    expect(isComposerAutoLabel('tile/claude-sonnet', { kind: 'tile', source: 'default' })).toBe(false)
   })
 
   describe('currentPickerSelection', () => {

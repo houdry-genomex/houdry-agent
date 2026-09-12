@@ -122,3 +122,17 @@ export function formatModelStatusLabel(
 
   return `${name} · ${parts.join(' ')}`
 }
+
+/** Composer pill shows Cursor-style "Auto" until the user pins a model.
+ *  Tiles keep the real name (each pane has its own runtime). A model id of
+ *  `auto` always displays as Auto. */
+export function isComposerAutoLabel(
+  model: string,
+  options?: { kind?: 'primary' | 'tile'; source?: '' | 'default' | 'manual' }
+): boolean {
+  if (modelBaseId(model).toLowerCase() === 'auto') {
+    return true
+  }
+
+  return options?.kind !== 'tile' && options?.source !== 'manual'
+}

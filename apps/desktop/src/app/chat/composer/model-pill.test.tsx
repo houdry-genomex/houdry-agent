@@ -81,6 +81,17 @@ describe('ModelPill pinned-override badge', () => {
 })
 
 describe('ModelPill per-surface model label', () => {
+  it('shows Auto on a primary draft using the profile default', () => {
+    setCurrentModel('gpt-5.6-luna')
+    setCurrentModelSource('default')
+    $activeSessionId.set(null)
+
+    render(<ModelPill disabled={false} model={modelState({ model: 'gpt-5.6-luna' })} />)
+
+    expect(screen.getByText('Auto')).toBeTruthy()
+    expect(screen.queryByText(/GPT-5\.6/i)).toBeNull()
+  })
+
   it('shows the chat-bar model even when the primary global differs', () => {
     setCurrentModel('primary/model')
     $activeSessionId.set('primary-runtime')

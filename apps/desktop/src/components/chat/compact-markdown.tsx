@@ -12,9 +12,9 @@ import { cn } from '@/lib/utils'
 
 const TAG_CLASSES = {
   blockquote: 'mt-2 mb-2 border-l-2 border-(--ui-stroke-tertiary) pl-2.5 italic text-muted-foreground/85',
-  h1: 'mt-3 mb-1.5 text-sm font-semibold tracking-tight text-foreground first:mt-0',
-  h2: 'mt-3 mb-1.5 text-[0.82rem] font-semibold tracking-tight text-foreground first:mt-0',
-  h3: 'mt-2.5 mb-1 text-[0.78rem] font-semibold text-foreground first:mt-0',
+  h1: 'mt-3 mb-1.5 text-sm font-medium tracking-tight text-foreground first:mt-0',
+  h2: 'mt-3 mb-1.5 text-[0.82rem] font-medium tracking-tight text-foreground first:mt-0',
+  h3: 'mt-2.5 mb-1 text-[0.78rem] font-medium text-foreground first:mt-0',
   h4: 'mt-2 mb-1 text-[0.74rem] font-semibold text-foreground first:mt-0',
   hr: 'my-2 border-(--ui-stroke-tertiary)',
   li: 'marker:text-muted-foreground/60',
@@ -22,7 +22,7 @@ const TAG_CLASSES = {
   p: 'mb-1.5 leading-relaxed last:mb-0',
   pre: 'mb-2 overflow-x-auto rounded-md border border-(--ui-stroke-tertiary) bg-background/70 p-2 font-mono text-[0.7rem] leading-[1.55] last:mb-0',
   td: 'px-2 py-1 align-top leading-snug',
-  th: 'px-2 py-1 text-left text-[0.62rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground/80',
+  th: 'px-2 py-1 text-left text-[0.62rem] font-medium text-muted-foreground/80',
   thead: 'bg-muted/40',
   ul: 'mb-2 list-disc pl-5 last:mb-0'
 } as const
