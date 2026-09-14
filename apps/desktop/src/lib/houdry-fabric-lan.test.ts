@@ -7,6 +7,7 @@ import {
   fromLoopbackHit,
   fromWifiAdvertise,
   mergeFabricLanScan,
+  pickPreferredFabricLan,
   shouldAdoptDiscoveredUrl,
   uniqueFabricLan
 } from './houdry-fabric-lan'
@@ -115,6 +116,25 @@ describe('uniqueFabricLan', () => {
 
     expect(out).toHaveLength(1)
     expect(out[0].host).toBe('192.168.29.179:8090')
+  })
+})
+
+describe('pickPreferredFabricLan', () => {
+  it('returns null for an empty scan', () => {
+    expect(pickPreferredFabricLan([])).toBeNull()
+  })
+
+  it('prefers this computer over a WiFi ad', () => {
+    const wifi = fromWifiAdvertise({
+      api: 'http://192.168.1.10:8080/v1',
+      name: 'lab',
+      openai: true,
+      url: 'http://192.168.1.10:8080',
+      auth: false
+    })
+    const local = fromLoopbackHit('http://127.0.0.1:18080/v1')
+
+    expect(pickPreferredFabricLan([wifi, local])?.api).toBe('http://127.0.0.1:18080/v1')
   })
 })
 

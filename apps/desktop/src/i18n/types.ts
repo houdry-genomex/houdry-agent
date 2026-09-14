@@ -118,6 +118,8 @@ export interface Translations {
       loadingSettings: string
       loadingSessions: string
       retryingRemoteBackend: string
+      searchingControlPlane: string
+      foundControlPlane: string
       startingDesktopConnection: string
       startingHermesDesktop: string
     }

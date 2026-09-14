@@ -72,6 +72,8 @@ export const en: Translations = {
       loadingSettings: 'Loading Houdry settings',
       loadingSessions: 'Loading recent sessions',
       retryingRemoteBackend: 'Reconnecting to the remote Houdry backend…',
+      searchingControlPlane: 'Searching for a control plane…',
+      foundControlPlane: 'Control plane found. Connecting…',
       startingDesktopConnection: 'Starting desktop connection',
       startingHermesDesktop: 'Starting Houdry Agent…'
     },

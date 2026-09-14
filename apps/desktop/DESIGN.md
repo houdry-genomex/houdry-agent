@@ -262,6 +262,11 @@ Sizes: `default`, `xs`, `overlay` (titlebar glyph counts).
 - Install, onboarding, connecting, boot failure, and reauthentication are
   distinct states with shared visual primitives. Preserve their recovery
   semantics when unifying appearance.
+- Cold boot is a quiet **control-plane search**, not a CONNECTING decode
+  splash and not a first-run provider picker. The overlay says it is
+  searching, then connecting once a Houdry fabric (`houdry serve`) answers
+  on loopback or this WiFi; that URL is the inference gateway. Settings →
+  Providers remains the manual Azure / URL path.
 - Respect `AppShell` overlay ownership. Persistent terminal/content layers,
   route overlays, dialogs, and boot surfaces must not compete through ad-hoc
   z-index literals. Pick a rung of the ladder in `styles.css` instead —

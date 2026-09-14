@@ -87,6 +87,8 @@ export const ar = defineLocale({
       loadingSettings: 'جار تحميل إعدادات Houdry',
       loadingSessions: 'جار تحميل الجلسات الأخيرة',
       retryingRemoteBackend: 'جارٍ إعادة الاتصال بخادم Houdry البعيد…',
+      searchingControlPlane: 'جارٍ البحث عن مستوى التحكم…',
+      foundControlPlane: 'تم العثور على مستوى التحكم. جارٍ الاتصال…',
       startingDesktopConnection: 'جار بدء اتصال سطح المكتب',
       startingHermesDesktop: 'جار تشغيل Houdry Desktop...'
     },

@@ -20,6 +20,15 @@ export function fabricHost(api: string): string {
   }
 }
 
+/** Highest-scoring endpoint: this computer, then RFC1918 WiFi, never a picker. */
+export function pickPreferredFabricLan(list: FabricLanEndpoint[]): FabricLanEndpoint | null {
+  if (list.length === 0) {
+    return null
+  }
+
+  return list.reduce((best, ep) => (lanEndpointScore(ep) > lanEndpointScore(best) ? ep : best))
+}
+
 export function uniqueFabricLan(list: FabricLanEndpoint[]): FabricLanEndpoint[] {
   const seen = new Set<string>()
   const seenName = new Map<string, number>()

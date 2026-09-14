@@ -72,6 +72,8 @@ export const zh: Translations = {
       loadingSettings: '正在加载 Houdry 设置',
       loadingSessions: '正在加载最近会话',
       retryingRemoteBackend: '正在重新连接远程 Houdry 后端…',
+      searchingControlPlane: '正在查找控制平面…',
+      foundControlPlane: '已找到控制平面。正在连接…',
       startingDesktopConnection: '正在启动桌面连接',
       startingHermesDesktop: '正在启动 Houdry 桌面版…'
     },

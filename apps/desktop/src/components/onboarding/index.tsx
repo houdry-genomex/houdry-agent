@@ -164,19 +164,9 @@ export function DesktopOnboardingOverlay({
     }
   }, [ctx, onboarding.flow.status, onboarding.manual, onboarding.providers])
 
-  // Mount from frame 1 so we replace the boot overlay seamlessly. The
-  // configured field stays null until the runtime check resolves; only then
-  // do we know whether to dismiss (true) or surface the picker (false).
-  // EXCEPTION: manual mode (user opened the selector from a working app to
-  // add/switch a provider) shows the overlay regardless of configured state.
-  if (onboarding.configured === true && !onboarding.manual) {
-    return null
-  }
-
-  // The user chose "I'll choose a provider later" on first run. Stay out of the
-  // way on every subsequent launch — they re-enter via Settings → Providers
-  // (manual mode), which sets manual=true and bypasses this gate.
-  if (onboarding.firstRunSkipped && !onboarding.manual) {
+  // First-run picker is stripped: cold boot searches for a control plane and
+  // adopts it as the gateway. Settings → Providers (manual) still uses this overlay.
+  if (!onboarding.manual) {
     return null
   }
 

@@ -88,6 +88,7 @@ import { requestComposerInsert } from '../chat/composer/focus'
 import { useComposerActions } from '../chat/hooks/use-composer-actions'
 import { CommandPalette } from '../command-palette'
 import { triggerAndRefreshCronJobs } from '../cron/cron-actions'
+import { useControlPlaneBoot } from '../gateway/hooks/use-control-plane-boot'
 import { useGatewayBoot } from '../gateway/hooks/use-gateway-boot'
 import { useGatewayRequest } from '../gateway/hooks/use-gateway-request'
 import { useKeybinds } from '../hooks/use-keybinds'
@@ -797,6 +798,17 @@ export function ContribWiring({ children }: { children: ReactNode }) {
     },
     refreshHermesConfig,
     refreshSessions
+  })
+
+  const onControlPlaneAdopted = useCallback(() => {
+    void refreshHermesConfig()
+    void refreshCurrentModel()
+    void queryClient.invalidateQueries({ queryKey: ['model-options'] })
+  }, [queryClient, refreshCurrentModel, refreshHermesConfig])
+
+  useControlPlaneBoot({
+    onCompleted: onControlPlaneAdopted,
+    requestGateway
   })
 
   useEffect(() => {

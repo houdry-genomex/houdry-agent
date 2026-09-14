@@ -30,8 +30,8 @@ function baseState(overrides: Partial<DesktopOnboardingState> = {}): DesktopOnbo
   }
 }
 
-// Counts only the OAuth-provider fetches. The unconfigured path also probes
-// every local-inference candidate (see tryAdoptLocalInference), so a raw call
+// Counts only the OAuth-provider fetches. The unconfigured path also scans
+// for a Houdry control plane (see tryAdoptLocalInference), so a raw call
 // count no longer says anything about provider refreshes.
 function oauthCalls(api: { mock: { calls: [{ path: string }][] } }) {
   return api.mock.calls.filter(([request]) => request.path === '/api/providers/oauth').length
@@ -547,25 +547,34 @@ describe('offline first run', () => {
     }) as OnboardingContext['requestGateway']
   }
 
-  it('adopts an inference server already running on this machine', async () => {
+  it('adopts a Houdry control plane already running on this machine', async () => {
     const calls: { body?: unknown; path: string }[] = []
 
-    installApiMock(async (request: { body?: unknown; path: string }) => {
-      calls.push(request)
+    Object.defineProperty(window, 'hermesDesktop', {
+      configurable: true,
+      value: {
+        api: async (request: { body?: unknown; path: string }) => {
+          calls.push(request)
 
-      if (request.path === '/api/providers/validate') {
-        const url = String((request.body as { value?: string }).value ?? '')
+          if (request.path === '/api/providers/validate') {
+            const url = String((request.body as { value?: string }).value ?? '')
 
-        return url.includes('11434')
-          ? { ok: true, reachable: true, message: '', models: ['llama3.1:8b'] }
-          : { ok: false, reachable: false, message: 'connection refused' }
+            return url.includes('18080')
+              ? { ok: true, reachable: true, message: '', models: ['auto'] }
+              : { ok: false, reachable: false, message: 'connection refused' }
+          }
+
+          if (request.path === '/api/model/set') {
+            return { ok: true, provider: 'custom', model: 'auto', base_url: 'http://127.0.0.1:18080/v1' }
+          }
+
+          throw new Error(`unexpected api path: ${request.path}`)
+        },
+        houdryFabric: {
+          discover: async () => [],
+          isControlPlane: async (origin: string) => origin === 'http://127.0.0.1:18080'
+        }
       }
-
-      if (request.path === '/api/model/set') {
-        return { ok: true, provider: 'custom', model: 'llama3.1:8b', base_url: 'http://127.0.0.1:11434/v1' }
-      }
-
-      throw new Error(`unexpected api path: ${request.path}`)
     })
 
     const ready = await refreshOnboarding(onboardingContext(adoptingGateway()))
@@ -575,8 +584,8 @@ describe('offline first run', () => {
     // No provider list was ever fetched — the picker never opened.
     expect(calls.some(call => call.path === '/api/providers/oauth')).toBe(false)
     expect(calls.find(call => call.path === '/api/model/set')?.body).toMatchObject({
-      base_url: 'http://127.0.0.1:11434/v1',
-      model: 'llama3.1:8b',
+      base_url: 'http://127.0.0.1:18080/v1',
+      model: 'auto',
       provider: 'custom'
     })
   })

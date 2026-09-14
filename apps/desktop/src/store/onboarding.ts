@@ -11,7 +11,7 @@ import {
   submitOAuthCode,
   validateProviderCredential
 } from '@/hermes'
-import { scanLocalInference } from '@/lib/local-inference-scan'
+import { scanPreferredControlPlane } from '@/lib/control-plane-scan'
 import { isProviderSetupErrorMessage } from '@/lib/provider-setup-errors'
 import { evaluateRuntimeReadiness, type RuntimeReadinessResult } from '@/lib/runtime-readiness'
 import { setMainModelAssignment } from '@/store/cron-model-impact'
@@ -557,19 +557,12 @@ export function resetLocalAutoAdoptForTests() {
   localAutoAdoptTried = false
 }
 
-// Last-resort before the blocking picker: look for an inference server already
-// running on this machine and configure it.
-//
-// This is what makes the app usable with the network cable out. Every path off
-// the first-run picker except the local-endpoint form needs a browser and a
-// round-trip to someone else's identity provider, so an unconfigured install on
-// an air-gapped machine dead-ends on a sign-in link it can never open — which
-// is the exact opposite of what an on-premise workbench is for.
+// Last-resort before chat without a model: look for a Houdry control plane on
+// this machine or the LAN and configure it as the inference gateway.
 //
 // It only fires when the runtime is genuinely not ready, so a working install
 // never pays for it, and it delegates to saveOnboardingLocalEndpoint so the
-// endpoint is validated and persisted through the same path the manual form
-// uses — no second, subtly-different way to write a provider.
+// endpoint is validated and persisted through the same path Settings uses.
 async function tryAdoptLocalInference(ctx: OnboardingContext): Promise<boolean> {
   if (localAutoAdoptTried) {
     return false
@@ -577,13 +570,13 @@ async function tryAdoptLocalInference(ctx: OnboardingContext): Promise<boolean> 
 
   localAutoAdoptTried = true
 
-  const hit = await scanLocalInference(baseUrl => validateProviderCredential('OPENAI_BASE_URL', baseUrl))
+  const hit = await scanPreferredControlPlane()
 
   if (!hit) {
     return false
   }
 
-  const saved = await saveOnboardingLocalEndpoint(hit.baseUrl, '', ctx)
+  const saved = await saveOnboardingLocalEndpoint(hit.api, '', ctx)
 
   return saved.ok
 }

@@ -72,6 +72,8 @@ export const zhHant = defineLocale({
       loadingSettings: '正在載入 Houdry 設定',
       loadingSessions: '正在載入最近工作階段',
       retryingRemoteBackend: '正在重新連線遠端 Houdry 後端…',
+      searchingControlPlane: '正在尋找控制平面…',
+      foundControlPlane: '已找到控制平面。正在連線…',
       startingDesktopConnection: '正在啟動桌面連線',
       startingHermesDesktop: '正在啟動 Houdry Desktop…'
     },

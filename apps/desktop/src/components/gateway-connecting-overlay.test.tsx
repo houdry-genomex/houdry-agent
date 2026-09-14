@@ -2,6 +2,7 @@ import { act, cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { $desktopBoot } from '@/store/boot'
+import { resetControlPlaneForTests } from '@/store/control-plane'
 import { $gatewaySwitching } from '@/store/gateway-switch'
 import { $desktopOnboarding } from '@/store/onboarding'
 import { setGatewayState } from '@/store/session'
@@ -46,21 +47,43 @@ function resetStores() {
     manual: false,
     localEndpoint: false
   })
+  resetControlPlaneForTests()
+  Object.defineProperty(window, 'hermesDesktop', {
+    configurable: true,
+    value: { getRecentLogs: async () => ({ lines: [] }) }
+  })
 }
 
 beforeEach(resetStores)
 afterEach(cleanup)
 
-// The connecting overlay renders "CONN" + a scrambled tail inside one
-// uppercase span; match that node specifically so the recovery overlay's
-// "Lost connection…" copy doesn't read as a false positive.
-const isConnectingShown = () =>
-  screen.queryAllByText((_, el) => /^CONN[/\\|\-_=+<>~:*A-Z]*$/.test(el?.textContent?.trim() ?? '')).length > 0
+const isConnectingShown = () => Boolean(document.querySelector('[data-slot="control-plane-overlay"]'))
 
 const isRecoveryShown = () =>
   Boolean(screen.queryByText(/use local gateway/i) || screen.queryByText(/retry/i) || screen.queryByText(/sign in/i))
 
 describe('connecting overlay vs recovery surface', () => {
+  it('cold boot shows searching for a control plane', async () => {
+    $desktopBoot.set({
+      error: null,
+      fakeMode: false,
+      message: 'starting',
+      phase: 'renderer.init',
+      progress: 2,
+      running: true,
+      timestamp: Date.now(),
+      visible: true
+    })
+    setGatewayState('idle')
+
+    await act(async () => {
+      render(<GatewayConnectingOverlay />)
+    })
+
+    expect(isConnectingShown()).toBe(true)
+    expect(screen.getByRole('status').textContent).toMatch(/control plane/i)
+  })
+
   it('hard initial-boot failure surfaces the recovery overlay (the working path)', async () => {
     // failDesktopBoot() ran: error set, gateway never opened.
     $desktopBoot.set({

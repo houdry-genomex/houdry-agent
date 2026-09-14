@@ -72,6 +72,8 @@ export const ja = defineLocale({
       loadingSettings: 'Houdry の設定を読み込み中',
       loadingSessions: '最近のセッションを読み込み中',
       retryingRemoteBackend: 'リモート Houdry バックエンドに再接続中…',
+      searchingControlPlane: 'コントロールプレーンを検索しています…',
+      foundControlPlane: 'コントロールプレーンを見つけました。接続中…',
       startingDesktopConnection: 'デスクトップ接続を開始中',
       startingHermesDesktop: 'Houdry Desktop を起動中…'
     },
