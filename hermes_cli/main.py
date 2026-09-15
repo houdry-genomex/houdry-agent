@@ -4843,16 +4843,31 @@ def _prompt_custom_api_mode_selection(base_url: str, current_api_mode: str = "")
 def _auto_provider_name(base_url: str) -> str:
     """Generate a display name from a custom endpoint URL.
 
-    Returns a human-friendly label like "Local (localhost:11434)" or
-    "RunPod (xyz.runpod.io)".  Used as the default when prompting the
-    user for a display name during custom endpoint setup.
+    Returns a human-friendly label like "Local (localhost:11434)",
+    "Houdry fabric (127.0.0.1:18080)", or "RunPod (xyz.runpod.io)". Used as
+    the default when prompting the user for a display name during custom
+    endpoint setup.
+
+    Houdry's control plane always fronts its OpenAI-compatible API on
+    loopback (127.0.0.1/localhost), even when it is routing jobs out to a GPU
+    worker on a different machine on the LAN — loopback here means "the
+    fabric API on this port", not "inference running on this laptop". Label
+    those endpoints by what they actually are (the control plane) instead of
+    "Local", which implies the models live on this machine when they may
+    live on a GPU laptop across the WiFi.
     """
     import re
 
     clean = base_url.replace("https://", "").replace("http://", "").rstrip("/")
     clean = re.sub(r"/v1/?$", "", clean)
     name = clean.split("/")[0]
-    if "localhost" in name or "127.0.0.1" in name:
+    is_loopback = "localhost" in name or "127.0.0.1" in name
+    is_houdry_fabric = "houdry" in base_url.lower() or bool(
+        re.search(r":(18080|8090)$", name)
+    )
+    if is_loopback and is_houdry_fabric:
+        name = f"Houdry fabric ({name})"
+    elif is_loopback:
         name = f"Local ({name})"
     elif "runpod" in name.lower():
         name = f"RunPod ({name})"

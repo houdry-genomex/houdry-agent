@@ -5,8 +5,10 @@ import { useState } from 'react'
 import { useSessionView } from '@/app/chat/session-view'
 import { Codicon } from '@/components/ui/codicon'
 import { DropdownMenuItem, dropdownMenuRow } from '@/components/ui/dropdown-menu'
-import type { HermesGateway } from '@/hermes'
+import { getHermesConfigRecord, type HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
+import { decideFabricReconnect, savedInferenceFromConfig } from '@/lib/control-plane-reconnect'
+import { probeControlPlane, scanPreferredControlPlane } from '@/lib/control-plane-scan'
 import { modelOptionsQueryKey, reconcileSelectionAfterCatalogRefresh, requestModelOptions } from '@/lib/model-options'
 import { currentPickerSelection } from '@/lib/model-status-label'
 import { DEFAULT_REASONING_EFFORT } from '@/lib/reasoning-effort'
@@ -14,6 +16,7 @@ import { cn } from '@/lib/utils'
 import { $modelPresets, applyModelPreset, modelPresetKey, setModelPreset } from '@/store/model-presets'
 import { $visibleModels } from '@/store/model-visibility'
 import { notifyError } from '@/store/notifications'
+import { saveOnboardingLocalEndpoint } from '@/store/onboarding'
 import {
   $defaultReasoningEffort,
   markComposerSelectionManual,
@@ -82,6 +85,39 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
     modelOptions.data
   )
 
+  // Best-effort: if the saved Houdry fabric endpoint is unreachable (e.g. the
+  // laptop moved to a different WiFi with a new control-plane IP), re-scan
+  // this WiFi/loopback and adopt whichever control plane answers now. This is
+  // the same decision `useControlPlaneBoot` makes at cold boot, but triggered
+  // on demand so "Refresh Models" recovers from a venue/IP change without
+  // requiring a full app restart. Never blocks the catalog refresh below —
+  // any failure here just leaves the existing (possibly stale) endpoint.
+  const rescanControlPlaneIfStale = async () => {
+    try {
+      const saved = savedInferenceFromConfig(await getHermesConfigRecord())
+      const [discovered, savedReachable] = await Promise.all([
+        scanPreferredControlPlane(),
+        saved?.baseUrl ? probeControlPlane(saved.baseUrl) : Promise.resolve(false)
+      ])
+
+      const decision = decideFabricReconnect({
+        configured: true,
+        discoveredApi: discovered?.api ?? null,
+        saved,
+        savedLoaded: true,
+        savedReachable
+      })
+
+      if (decision.action === 'adopt') {
+        await saveOnboardingLocalEndpoint(decision.api, '', { profile, requestGateway })
+      }
+    } catch {
+      // No saved fabric endpoint, no LAN reachable, or a plain provider
+      // (API-key based) — nothing to rescan. Fall through to the normal
+      // catalog refresh below.
+    }
+  }
+
   // Explicit "Refresh Models": re-fetch the catalog with refresh:true so the
   // backend busts its 1h provider-model disk cache and re-pulls each provider's
   // live list. Fixes live-only models (e.g. OpenCode Zen free tier) vanishing
@@ -94,6 +130,8 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
     setRefreshing(true)
 
     try {
+      await rescanControlPlaneIfStale()
+
       const queryKey = modelOptionsQueryKey(profile, activeSessionId)
 
       const next = await requestModelOptions({

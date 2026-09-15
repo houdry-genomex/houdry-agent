@@ -17479,7 +17479,27 @@ app.on('open-url', (event, url) => {
 // start. Only a child we own gets killed on quit.
 let houdryRouterChild: ReturnType<typeof spawn> | null = null
 
+// Opt-out for multi-machine fabric setups: when the control plane always
+// lives on a different laptop on the WiFi (a GPU host, or a dedicated
+// control-plane machine), auto-spawning a second `houdry serve` on THIS
+// machine is actively wrong — it would compete with the real one for the
+// loopback port and let this laptop's own model list mask the fabric's.
+// Set HOUDRY_DISABLE_LOCAL_ROUTER=1 (persist it via System Environment
+// Variables, or a wrapper script that sets it before launching the app) to
+// keep this install a pure client: it will still find and use a control
+// plane the user starts on this machine by hand, via the normal WiFi/loopback
+// discovery in useControlPlaneBoot — it just won't start one itself.
+function localRouterDisabled(): boolean {
+  return /^(1|true)$/i.test((process.env.HOUDRY_DISABLE_LOCAL_ROUTER ?? '').trim())
+}
+
 async function startLocalInferenceFabric() {
+  if (localRouterDisabled()) {
+    rememberLog('[houdry-router] HOUDRY_DISABLE_LOCAL_ROUTER set; not auto-starting a local fabric')
+
+    return
+  }
+
   try {
     const binary = resolveHoudryBinary({
       appRoot: APP_ROOT,

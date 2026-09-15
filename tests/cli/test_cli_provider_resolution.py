@@ -610,6 +610,19 @@ def test_auto_provider_name_localhost():
     assert _auto_provider_name("http://127.0.0.1:1234/v1") == "Local (127.0.0.1:1234)"
 
 
+def test_auto_provider_name_houdry_fabric_loopback():
+    # The fabric's OpenAI-compatible API is always on loopback, even when it
+    # routes jobs to a GPU worker on a different laptop. Label it as the
+    # control plane, not "Local" — the models it serves may not be on this
+    # machine at all.
+    from hermes_cli.main import _auto_provider_name
+    assert _auto_provider_name("http://127.0.0.1:18080/v1") == "Houdry fabric (127.0.0.1:18080)"
+    assert _auto_provider_name("http://127.0.0.1:8090/v1") == "Houdry fabric (127.0.0.1:8090)"
+    # A non-fabric loopback port stays "Local" even if it happens to be an
+    # actual Ollama/LM Studio instance on this machine.
+    assert _auto_provider_name("http://127.0.0.1:11434/v1") == "Local (127.0.0.1:11434)"
+
+
 
 
 
