@@ -39,7 +39,6 @@ import https from 'node:https'
 import path from 'node:path'
 
 import { OFFICIAL_GITHUB_OWNER, OFFICIAL_GITHUB_REPO } from './update-remote'
-
 import { hiddenWindowsChildOptions } from './windows-child-options'
 
 const IS_WINDOWS = process.platform === 'win32'

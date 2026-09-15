@@ -104,6 +104,7 @@ describe('uniqueFabricLan', () => {
       openai: true,
       url: 'http://192.168.29.179:8090'
     })
+
     const wsl = fromWifiAdvertise({
       api: 'http://172.23.96.1:8090/v1',
       auth: false,
@@ -132,6 +133,7 @@ describe('pickPreferredFabricLan', () => {
       url: 'http://192.168.1.10:8080',
       auth: false
     })
+
     const local = fromLoopbackHit('http://127.0.0.1:18080/v1')
 
     expect(pickPreferredFabricLan([wifi, local])?.api).toBe('http://127.0.0.1:18080/v1')

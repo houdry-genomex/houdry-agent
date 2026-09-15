@@ -185,6 +185,7 @@ export async function startHoudryRouter(options: StartRouterOptions): Promise<St
 
     if (status === 'free') {
       listenPort = port
+
       break
     }
   }

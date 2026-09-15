@@ -52,9 +52,11 @@ describe('default UI typography', () => {
 
   it('does not load Inter from Google Fonts', () => {
     expect(DEFAULT_TYPOGRAPHY.fontUrl).toBeUndefined()
+
     for (const theme of BUILTIN_THEME_LIST) {
       const url = theme.typography?.fontUrl
-      if (!url) continue
+
+      if (!url) {continue}
       expect(url).not.toMatch(/family=Inter/)
     }
   })

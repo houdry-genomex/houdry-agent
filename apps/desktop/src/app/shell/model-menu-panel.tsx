@@ -95,6 +95,7 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
   const rescanControlPlaneIfStale = async () => {
     try {
       const saved = savedInferenceFromConfig(await getHermesConfigRecord())
+
       const [discovered, savedReachable] = await Promise.all([
         scanPreferredControlPlane(),
         saved?.baseUrl ? probeControlPlane(saved.baseUrl) : Promise.resolve(false)

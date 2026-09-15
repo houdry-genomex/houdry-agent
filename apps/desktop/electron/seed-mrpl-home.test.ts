@@ -40,6 +40,7 @@ test('does not overwrite an existing config.yaml', () => {
     [TEMPLATE_PATH]: TEMPLATE,
     [`${HOME}/config.yaml`]: 'model:\n  provider: custom\n'
   })
+
   const result = seedMrplDesktopHome({ fs: io, hermesHome: HOME, templateDir: TEMPLATE_DIR })
 
   assert.equal(result.wroteConfig, false)
@@ -52,6 +53,7 @@ test('does not duplicate Azure env keys already present', () => {
     [`${HOME}/config.yaml`]: 'model:\n  provider: azure\n',
     [`${HOME}/.env`]: 'AZURE_OPENAI_API_KEY=secret\nAZURE_OPENAI_ENDPOINT=https://example.openai.azure.com\nAZURE_OPENAI_DEPLOYMENT=gpt-5.6-luna\n'
   })
+
   const result = seedMrplDesktopHome({ fs: io, hermesHome: HOME, templateDir: TEMPLATE_DIR })
 
   assert.equal(result.wroteEnvPlaceholders, false)

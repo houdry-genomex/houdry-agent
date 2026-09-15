@@ -76,6 +76,7 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
 
   const reload = useCallback(async () => {
     const api = knowledgeApi()
+
     if (!api) {
       setLoadError(k.loadFailed)
       setDocuments([])
@@ -120,6 +121,7 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     const list = documents ?? []
+
     if (!q) {
       return list
     }
@@ -135,6 +137,7 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
 
   const importFiles = async () => {
     const api = knowledgeApi()
+
     if (!api || busy) {
       return
     }
@@ -144,15 +147,18 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
       multiple: true,
       title: k.add
     })
+
     if (!paths?.length) {
       return
     }
 
     setBusy(true)
+
     try {
       const added = await api.importFiles(paths, category)
       notify({ message: k.imported(added.length) })
       await reload()
+
       if (added[0]?.id) {
         setSelectedId(added[0].id)
       }
@@ -165,17 +171,20 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
 
   const createNote = async () => {
     const api = knowledgeApi()
+
     if (!api || busy) {
       return
     }
 
     setBusy(true)
+
     try {
       const doc = await api.createNote({
         category,
         rules: rulesDraft,
         title: titleDraft
       })
+
       notify({ message: k.imported(1) })
       await reload()
       setSelectedId(doc.id)
@@ -189,11 +198,13 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
 
   const saveRules = async () => {
     const api = knowledgeApi()
+
     if (!api || !selected || busy) {
       return
     }
 
     setBusy(true)
+
     try {
       await api.update(selected.id, { rules: rulesDraft, title: titleDraft })
       notify({ message: k.saved })
@@ -207,6 +218,7 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
 
   const removeSelected = async () => {
     const api = knowledgeApi()
+
     if (!api || !selected || busy) {
       return
     }
@@ -216,6 +228,7 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
     }
 
     setBusy(true)
+
     try {
       await api.remove(selected.id)
       notify({ message: k.removed })
@@ -230,11 +243,13 @@ export function KnowledgeView(_props: { setStatusbarItemGroup?: SetStatusbarItem
 
   const openFolder = async () => {
     const api = knowledgeApi()
+
     if (!api) {
       return
     }
 
     const result = await api.openFolder()
+
     if (!result.ok) {
       notifyError(result.error ?? k.openFailed, k.openFailed)
     }
