@@ -38,6 +38,10 @@ from agent.conversation_compression import (
 )
 from agent.context_engine import automatic_compaction_status_message
 from agent.display import KawaiiSpinner
+from agent.chat_completion_helpers import (
+    mark_model_tools_unsupported,
+    resolve_tools_for_api,
+)
 from agent.error_classifier import FailoverReason, classify_api_error
 from agent.message_metadata import append_message
 from agent.turn_context import (
@@ -2535,7 +2539,7 @@ def run_conversation(
         # exactly the point the breakpoints were meant to protect. Marking
         # last also keeps breakpoints off messages that the orphan sweep or
         # the thinking-only drop is about to remove or merge away.
-        tools_for_api = agent.tools
+        tools_for_api = resolve_tools_for_api(agent)
         if agent._use_prompt_caching and agent.provider != "moa":
             _static_system_prefix = getattr(agent, "_cached_system_prompt_static", None)
             _initial_cache_plan = build_prompt_cache_plan(
@@ -5185,6 +5189,31 @@ def run_conversation(
                         "keywords to strip — falling through to normal retry",
                         agent.log_prefix,
                     )
+
+                # ── Model rejects tools — retry text-only ─────────────
+                # Hermes always sends tool schemas. Local/fabric models
+                # (Houdry GPU peers, some Ollama tags) return HTTP 400
+                # "does not support tools" even for a plain chat turn.
+                # Recovery: omit tools and retry the SAME pinned model.
+                # Do not switch to model=auto — the user picked this GPU.
+                if (
+                    classified.reason == FailoverReason.model_no_tool_support
+                    and not _retry.model_no_tool_support_retry_attempted
+                ):
+                    _retry.model_no_tool_support_retry_attempted = True
+                    mark_model_tools_unsupported(agent)
+                    tools_for_api = []
+                    agent._vprint(
+                        f"{agent.log_prefix}⚠️  Model {agent.model} does not "
+                        f"support tool calling — retrying as text-only chat...",
+                        force=True,
+                    )
+                    logger.warning(
+                        "%sModel %s rejected tools — omitting tools and retrying",
+                        agent.log_prefix,
+                        agent.model,
+                    )
+                    continue
 
                 retry_count += 1
                 elapsed_time = time.time() - api_start_time

@@ -13,7 +13,9 @@ once per attempt. They used to be ~16 bare ``*_attempted`` / ``has_retried_*``
 / ``restart_with_*`` locals declared inline before the loop and threaded
 through its 2,400-line body. ``TurnRetryState`` collapses them into one object
 the loop mutates in place (``state.codex_auth_retry_attempted = True``), giving
-the recovery bookkeeping a single named, testable home.
+the recovery bookkeeping a single named, testable home. The model-no-tool-
+support recovery also stamps ``agent._tools_unsupported_models`` so later
+turns on the same model skip the 400.
 
 Loop-control variables (``retry_count``, ``max_retries``,
 ``max_compression_attempts``) intentionally stay as plain locals — they are the
@@ -63,6 +65,7 @@ class TurnRetryState:
     multimodal_tool_content_retry_attempted: bool = False
     oauth_1m_beta_retry_attempted: bool = False
     llama_cpp_grammar_retry_attempted: bool = False
+    model_no_tool_support_retry_attempted: bool = False
 
     # ── Transport / rate-limit recovery ──────────────────────────────────
     primary_recovery_attempted: bool = False

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { scanPreferredControlPlane } from './control-plane-scan'
+import { probeControlPlane, scanPreferredControlPlane } from './control-plane-scan'
 
 function stubFabric(opts: {
   discover?: () => Promise<
@@ -68,5 +68,28 @@ describe('scanPreferredControlPlane', () => {
     stubFabric({})
 
     expect(await scanPreferredControlPlane()).toBeNull()
+  })
+})
+
+describe('probeControlPlane', () => {
+  it('asks isControlPlane with the origin, not the /v1 path', async () => {
+    const seen: string[] = []
+
+    stubFabric({
+      isControlPlane: async origin => {
+        seen.push(origin)
+
+        return origin === 'http://10.1.1.5:18080'
+      }
+    })
+
+    await expect(probeControlPlane('http://10.1.1.5:18080/v1')).resolves.toBe(true)
+    expect(seen).toEqual(['http://10.1.1.5:18080'])
+  })
+
+  it('returns false when the saved URL is not a control plane', async () => {
+    stubFabric({ isControlPlane: async () => false })
+
+    await expect(probeControlPlane('http://10.179.222.111:8090/v1')).resolves.toBe(false)
   })
 })

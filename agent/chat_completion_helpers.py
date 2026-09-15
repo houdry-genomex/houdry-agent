@@ -1822,10 +1822,37 @@ def interruptible_api_call(agent, api_kwargs: dict):
 
 
 
+def resolve_tools_for_api(agent, tools_for_api: list | None = None):
+    """Tools to send on this request.
+
+    Some local/fabric models reject ANY ``tools`` field. After a one-shot
+    400 recovery the session remembers that model and omits tools so later
+    turns do not 400 again. Switching models restores tools automatically.
+    """
+    rejected = getattr(agent, "_tools_unsupported_models", None)
+    model = getattr(agent, "model", None)
+    if rejected and model in rejected:
+        return []
+    if tools_for_api is None:
+        return agent.tools
+    return tools_for_api
+
+
+def mark_model_tools_unsupported(agent) -> None:
+    """Remember that the current model rejected the tools field."""
+    model = getattr(agent, "model", None)
+    if not model:
+        return
+    rejected = getattr(agent, "_tools_unsupported_models", None)
+    if rejected is None:
+        rejected = set()
+        agent._tools_unsupported_models = rejected
+    rejected.add(model)
+
+
 def build_api_kwargs(agent, api_messages: list, tools_for_api: list | None = None) -> dict:
     """Build the keyword arguments dict for the active API mode."""
-    if tools_for_api is None:
-        tools_for_api = agent.tools
+    tools_for_api = resolve_tools_for_api(agent, tools_for_api)
 
     if agent.api_mode == "anthropic_messages":
         _transport = agent._get_transport()
@@ -2450,6 +2477,7 @@ def _fallback_reason_text(reason: "FailoverReason | None") -> str:
         FailoverReason.long_context_tier: "long-context tier unavailable",
         FailoverReason.oauth_long_context_beta_forbidden: "OAuth long-context beta unavailable",
         FailoverReason.llama_cpp_grammar_pattern: "grammar pattern rejected",
+        FailoverReason.model_no_tool_support: "model does not support tools",
         FailoverReason.unknown: "provider failure",
     }
     label = labels.get(reason)

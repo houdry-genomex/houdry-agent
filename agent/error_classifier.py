@@ -73,6 +73,7 @@ class FailoverReason(enum.Enum):
     long_context_tier = "long_context_tier"    # Anthropic "extra usage" tier gate
     oauth_long_context_beta_forbidden = "oauth_long_context_beta_forbidden"  # Anthropic OAuth subscription rejects 1M context beta — disable beta and retry
     llama_cpp_grammar_pattern = "llama_cpp_grammar_pattern"  # llama.cpp json-schema-to-grammar rejects regex escapes in `pattern` / `format` — strip from tools and retry
+    model_no_tool_support = "model_no_tool_support"  # pinned model rejects the tools field — omit tools and retry; do not swap the model
 
     # Catch-all
     unknown = "unknown"                  # Unclassifiable — retry with backoff
@@ -381,6 +382,20 @@ _MODEL_NOT_FOUND_PATTERNS = [
     "no endpoints found that support tool use",
 ]
 
+# Pinned local/fabric models that reject ANY tools field (even unused).
+# Distinct from OpenRouter's "no endpoints found that support tool use",
+# which is a routing miss and should failover to a different model.
+# Houdry fabric example:
+#   HTTP 400: model "lfm2.5-thinking:1.2b" does not support tools;
+#   use a tool-capable model ... or model=auto
+# Recovery is omit-tools-and-retry on the SAME model — the user picked it.
+_MODEL_NO_TOOL_SUPPORT_PATTERNS = (
+    "does not support tools",
+    "does not support tool use",
+    "does not support tool calling",
+    "does not support function calling",
+)
+
 
 def _model_id_missing_known_prefix(model: str, provider: str) -> bool:
     """True when a bare model id is only known to the provider as ``vendor/id``.
@@ -517,6 +532,31 @@ def _is_server_injected_param_rejection(error_msg: str, provider: str) -> bool:
     return False
 
 
+def _classify_empty_response(error_msg: str, result_fn):
+    """Empty completion bodies.
+
+    OpenRouter / nano-gpt advisories are transient — retry without
+    compression. Houdry's ``runtime returned an empty response`` is
+    deterministic for the current fabric binary (thinking models write
+    into ``thinking`` and the adapter only read ``content``), so retrying
+    the same request just queues more succeeded-empty GPU jobs.
+    """
+    if any(p in error_msg for p in _DETERMINISTIC_EMPTY_RUNTIME_PATTERNS):
+        return result_fn(
+            FailoverReason.server_error,
+            retryable=False,
+            should_compress=False,
+            should_fallback=False,
+        )
+    if any(p in error_msg for p in _EMPTY_PROVIDER_RESPONSE_PATTERNS):
+        return result_fn(
+            FailoverReason.server_error,
+            retryable=True,
+            should_compress=False,
+        )
+    return None
+
+
 # OpenRouter aggregator policy-block patterns.
 #
 # When a user's OpenRouter account privacy setting (or a per-request
@@ -606,10 +646,6 @@ _THINKING_SIG_PATTERNS = [
     "signature",  # Combined with "thinking" check
 ]
 
-# Message-string patterns that indicate a provider-side timeout even when
-# the exception type is generic (e.g. RuntimeError from a local shim that
-# wraps a subprocess timeout).  Checked before the type-based transport
-# heuristics so custom-provider "timed out" errors don't fall through to
 # Provider empty-response advisories (OpenRouter / nano-gpt / similar).
 # Checked before context-overflow matching because the advisory text often
 # mentions "max_tokens" as a possible cause, which historically sat in
@@ -623,6 +659,19 @@ _EMPTY_PROVIDER_RESPONSE_PATTERNS = [
     "empty response stream",
 ]
 
+# Houdry fabric: the GPU job finished, but Ollama left `content` empty
+# (DeepSeek-R1 / thinking tags write into `thinking`). Retrying the same
+# request just queues more succeeded-empty jobs on the GPU node.
+# Must be checked BEFORE _EMPTY_PROVIDER_RESPONSE_PATTERNS because the
+# fabric message also contains "returned an empty response".
+_DETERMINISTIC_EMPTY_RUNTIME_PATTERNS = (
+    "runtime returned an empty response",
+)
+
+# Message-string patterns that indicate a provider-side timeout even when
+# the exception type is generic (e.g. RuntimeError from a local shim that
+# wraps a subprocess timeout).  Checked before the type-based transport
+# heuristics so custom-provider "timed out" errors don't fall through to
 # the unknown bucket and get misreported as empty responses.
 _TIMEOUT_MESSAGE_PATTERNS = [
     "timed out",
@@ -1014,6 +1063,22 @@ def classify_api_error(
             FailoverReason.llama_cpp_grammar_pattern,
             retryable=True,
             should_compress=False,
+        )
+
+    # Local/fabric inference (Houdry, some Ollama/llama.cpp builds) rejects
+    # the tools field on models that cannot call tools. Hermes always sends
+    # tool schemas, so a plain chat turn still 400s. Do not require
+    # status_code == 400 — some wrappers only put "HTTP 400:" in the
+    # message, which otherwise falls through to retryable unknown and
+    # burns retries on the same tools payload. Do NOT classify OpenRouter's
+    # "no endpoints found that support tool use" here (that's model_not_found
+    # failover). Match before generic 400 format_error.
+    if any(p in error_msg for p in _MODEL_NO_TOOL_SUPPORT_PATTERNS):
+        return _result(
+            FailoverReason.model_no_tool_support,
+            retryable=True,
+            should_compress=False,
+            should_fallback=False,
         )
 
     # xAI Grok subscription entitlement errors.
@@ -1436,12 +1501,9 @@ def _classify_by_status(
         # blind server_error retries that exhaust and drop the turn.
         # Empty-response advisories that mention "max_tokens" must not enter
         # that compression path.
-        if any(p in error_msg for p in _EMPTY_PROVIDER_RESPONSE_PATTERNS):
-            return result_fn(
-                FailoverReason.server_error,
-                retryable=True,
-                should_compress=False,
-            )
+        empty = _classify_empty_response(error_msg, result_fn)
+        if empty is not None:
+            return empty
         if any(p in error_msg for p in _CONTEXT_OVERFLOW_PATTERNS):
             return result_fn(
                 FailoverReason.context_overflow,
@@ -1455,12 +1517,9 @@ def _classify_by_status(
         # Cloudflare/Tailscale hop relabeling the status). Route explicit
         # overflow bodies into compression; otherwise treat as transient
         # overload and retry.
-        if any(p in error_msg for p in _EMPTY_PROVIDER_RESPONSE_PATTERNS):
-            return result_fn(
-                FailoverReason.server_error,
-                retryable=True,
-                should_compress=False,
-            )
+        empty = _classify_empty_response(error_msg, result_fn)
+        if empty is not None:
+            return empty
         if any(p in error_msg for p in _CONTEXT_OVERFLOW_PATTERNS):
             return result_fn(
                 FailoverReason.context_overflow,
@@ -1694,12 +1753,9 @@ def _classify_400(
     # often mention "max_tokens" as a possible cause and used to match the
     # bare overflow pattern, then thrash compress until "Cannot compress
     # further" on an otherwise healthy session (custom endpoints / nano-gpt).
-    if any(p in error_msg for p in _EMPTY_PROVIDER_RESPONSE_PATTERNS):
-        return result_fn(
-            FailoverReason.server_error,
-            retryable=True,
-            should_compress=False,
-        )
+    empty = _classify_empty_response(error_msg, result_fn)
+    if empty is not None:
+        return empty
 
     # Context overflow from 400
     if any(p in error_msg for p in _CONTEXT_OVERFLOW_PATTERNS):
@@ -1940,12 +1996,9 @@ def _classify_by_message(
 
     # Empty-provider-response advisories (often mention "max_tokens") must
     # retry without compression — see the matching 400-path guard above.
-    if any(p in error_msg for p in _EMPTY_PROVIDER_RESPONSE_PATTERNS):
-        return result_fn(
-            FailoverReason.server_error,
-            retryable=True,
-            should_compress=False,
-        )
+    empty = _classify_empty_response(error_msg, result_fn)
+    if empty is not None:
+        return empty
 
     # Context overflow patterns
     if any(p in error_msg for p in _CONTEXT_OVERFLOW_PATTERNS):

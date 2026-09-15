@@ -69,6 +69,7 @@ class TestFailoverReason:
             "thinking_signature", "long_context_tier",
             "oauth_long_context_beta_forbidden",
             "llama_cpp_grammar_pattern",
+            "model_no_tool_support",
             "unknown",
         }
         actual = {r.value for r in FailoverReason}
@@ -440,6 +441,31 @@ class TestClassifyApiError:
         result = classify_api_error(e)
         assert result.reason == FailoverReason.server_error
 
+    def test_houdry_runtime_empty_response_502_is_not_retried(self):
+        """Houdry fabric 502: GPU job succeeded with empty `content`.
+        Retrying the identical request just queues more empty jobs."""
+        e = MockAPIError(
+            "HTTP 502: runtime returned an empty response",
+            status_code=502,
+        )
+        result = classify_api_error(
+            e, provider="garvit", model="deepseek-r1:14b",
+        )
+        assert result.reason == FailoverReason.server_error
+        assert result.retryable is False
+        assert result.should_compress is False
+        assert result.should_fallback is False
+
+    def test_openrouter_empty_response_advisory_stays_retryable(self):
+        e = MockAPIError(
+            "Provider returned an empty response. Try raising max_tokens.",
+            status_code=502,
+        )
+        result = classify_api_error(e)
+        assert result.reason == FailoverReason.server_error
+        assert result.retryable is True
+        assert result.should_compress is False
+
     def test_503_overloaded(self):
         e = MockAPIError("Service Unavailable", status_code=503)
         result = classify_api_error(e)
@@ -701,6 +727,48 @@ class TestClassifyApiError:
         assert result.reason == FailoverReason.llama_cpp_grammar_pattern
         assert result.retryable is True
         assert result.should_compress is False
+
+    # ── Local/fabric model rejects tools (Houdry GPU peers) ──
+
+    def test_houdry_model_does_not_support_tools_without_status_code(self):
+        # Wrappers often put "HTTP 400:" only in the message, so status_code
+        # is missing and a generic 400 classifier never runs.
+        e = Exception(
+            'HTTP 400: model "lfm2.5-thinking:1.2b" does not support tools; '
+            "use a tool-capable model (e.g. qwen2.5-coder:1.5b) or model=auto"
+        )
+        result = classify_api_error(
+            e, provider="custom", model="lfm2.5-thinking:1.2b"
+        )
+        assert result.reason == FailoverReason.model_no_tool_support
+        assert result.retryable is True
+        assert result.should_fallback is False
+        assert result.should_compress is False
+
+    def test_houdry_model_does_not_support_tools_with_http_400(self):
+        e = MockAPIError(
+            'model "lfm2.5-thinking:1.2b" does not support tools; '
+            "use a tool-capable model or model=auto",
+            status_code=400,
+        )
+        result = classify_api_error(
+            e, provider="custom", model="lfm2.5-thinking:1.2b"
+        )
+        assert result.reason == FailoverReason.model_no_tool_support
+        assert result.retryable is True
+        assert result.should_fallback is False
+
+    def test_openrouter_no_tool_endpoints_is_not_model_no_tool_support(self):
+        """OpenRouter routing miss must still failover to another model."""
+        e = MockAPIError(
+            "No endpoints found that support tool use",
+            status_code=404,
+        )
+        result = classify_api_error(
+            e, provider="openrouter", model="some-model"
+        )
+        assert result.reason == FailoverReason.model_not_found
+        assert result.reason != FailoverReason.model_no_tool_support
 
     def test_qwen_apply_prompt_template_no_user_query_not_llama_cpp_grammar(self):
         """Local engines wrap Qwen raise_exception as applyPromptTemplate 400.

@@ -1,4 +1,5 @@
 import type { DesktopHoudryFabricEndpoint } from '@/global'
+import { fabricApiOrigin } from '@/lib/control-plane-reconnect'
 import {
   type FabricLanEndpoint,
   fromWifiAdvertise,
@@ -35,6 +36,22 @@ async function scanLoopbackControlPlane(): Promise<string | null> {
   }
 
   return null
+}
+
+/** True when `/.well-known/houdry.json` answers at this API or origin. */
+export async function probeControlPlane(api: string): Promise<boolean> {
+  const origin = fabricApiOrigin(api)
+  const isControlPlane = window.hermesDesktop?.houdryFabric?.isControlPlane
+
+  if (!origin || !isControlPlane) {
+    return false
+  }
+
+  try {
+    return await isControlPlane(origin)
+  } catch {
+    return false
+  }
 }
 
 /** UDP WiFi ads + loopback `/.well-known/houdry.json`. Loopback wins when both answer. */

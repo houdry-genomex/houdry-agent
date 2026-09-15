@@ -28,6 +28,7 @@ EXPECTED_FIELDS = {
     "multimodal_tool_content_retry_attempted",
     "oauth_1m_beta_retry_attempted",
     "llama_cpp_grammar_retry_attempted",
+    "model_no_tool_support_retry_attempted",
     "primary_recovery_attempted",
     "has_retried_429",
     "auth_failover_attempted",
