@@ -6,8 +6,8 @@ import {
   decideFabricReconnect,
   isLoopbackApi,
   sameFabricApi,
-  savedInferenceFromConfig,
-  type SavedInference
+  type SavedInference,
+  savedInferenceFromConfig
 } from '@/lib/control-plane-reconnect'
 import { probeControlPlane, scanPreferredControlPlane } from '@/lib/control-plane-scan'
 import { $controlPlane, setControlPlaneConnecting, setControlPlaneFound, setControlPlaneSearching } from '@/store/control-plane'
@@ -86,6 +86,7 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
 
         if (onboarded && !activeApi && $gatewayState.get() !== 'open') {
           await sleep(RESCAN_MS, abort.signal)
+
           continue
         }
 
@@ -119,6 +120,7 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
         }
 
         const savedReachable = saved?.baseUrl ? await probeControlPlane(saved.baseUrl) : false
+
         const decision = decideFabricReconnect({
           configured: $desktopOnboarding.get().configured,
           discoveredApi: discovered?.api ?? null,
@@ -141,6 +143,7 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
           activeApi = decision.api
           misses = 0
           setControlPlaneConnecting(decision.api)
+
           continue
         }
 
@@ -149,6 +152,7 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
           misses = 0
           rewriteRef.current = rewriteRef.current || onboarded
           setControlPlaneFound(decision.api)
+
           continue
         }
 

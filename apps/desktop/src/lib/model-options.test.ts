@@ -278,6 +278,7 @@ describe('reconcileSelectionAfterCatalogRefresh', () => {
       slug: 'custom:192.168.29.48:18080',
       models: ['auto', 'Lfm2.5 Thinking:1.2b Med']
     }
+
     const live = {
       name: 'Houdry fabric (192.168.1.15:18080)',
       slug: 'custom:houdry-fabric-(192.168.1.15:18080)',

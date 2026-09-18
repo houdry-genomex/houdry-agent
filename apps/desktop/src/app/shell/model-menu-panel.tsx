@@ -96,6 +96,7 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
           message: 'No Houdry control plane found on this WiFi.',
           title: 'Refresh Models'
         })
+
         return false
       }
 
@@ -107,6 +108,7 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
           message: saved.message || `Found ${discovered.host}, but could not connect.`,
           title: 'Refresh Models'
         })
+
         return false
       }
 
@@ -115,9 +117,11 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
         message: `Connected to ${discovered.host}`,
         title: 'Houdry control plane'
       })
+
       return true
     } catch (error) {
       notifyError(error, 'Could not connect to the control plane on this WiFi')
+
       return false
     }
   }

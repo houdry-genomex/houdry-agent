@@ -1,3 +1,4 @@
+import { scopeHoudryDesktopModelCatalog } from '@/lib/houdry-inference-providers'
 import type {
   AnalyticsResponse,
   AuxiliaryModelsResponse,
@@ -9,7 +10,6 @@ import type {
 } from '@/types/hermes'
 
 import { capabilityScoped, hermesApi, type ProfileScope, profileScoped, STARTUP_REQUEST_TIMEOUT_MS } from './client'
-import { scopeHoudryDesktopModelCatalog } from '@/lib/houdry-inference-providers'
 
 export function getGlobalModelInfo(profile?: null | string): Promise<ModelInfoResponse> {
   return hermesApi<ModelInfoResponse>({

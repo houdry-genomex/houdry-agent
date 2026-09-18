@@ -1,8 +1,8 @@
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import https from 'node:https'
 import os from 'node:os'
 import path from 'node:path'
-import { createHash } from 'node:crypto'
 
 export function houdryHome(env: NodeJS.ProcessEnv = process.env, homedir: string = os.homedir()): string {
   const override = env.HOUDRY_HOME?.trim()

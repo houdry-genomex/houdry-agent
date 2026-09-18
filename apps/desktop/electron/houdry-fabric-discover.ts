@@ -203,6 +203,7 @@ function uniqueFabricEndpointsOn(
       return url === ep.url && api === ep.api ? ep : { ...ep, url, api }
     })
     .filter(ep => !isLoopbackFabricHost(ep.url))
+
   const seenUrl = new Map<string, number>()
   const byUrl: HoudryFabricEndpoint[] = []
 
