@@ -96,6 +96,27 @@ describe('uniqueFabricLan', () => {
     expect(uniqueFabricLan([a, b]).map(ep => ep.name)).toEqual(['first'])
   })
 
+  it('drops a loopback advertise so WiFi scan cannot adopt 127.0.0.1', () => {
+    const local = fromWifiAdvertise({
+      api: 'https://127.0.0.1:18080/v1',
+      auth: false,
+      name: 'leftover-local',
+      openai: true,
+      url: 'https://127.0.0.1:18080'
+    })
+    const wifi = fromWifiAdvertise({
+      api: 'https://192.168.29.48:18080/v1',
+      auth: false,
+      name: 'houdry-hp',
+      openai: true,
+      url: 'https://192.168.29.48:18080'
+    })
+
+    expect(uniqueFabricLan([local, wifi]).map(ep => ep.api)).toEqual([
+      'https://192.168.29.48:18080/v1'
+    ])
+  })
+
   it('collapses one control plane advertised on WiFi and WSL', () => {
     const wifi = fromWifiAdvertise({
       api: 'https://192.168.29.179:8090/v1',

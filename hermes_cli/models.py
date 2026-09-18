@@ -61,21 +61,25 @@ def _custom_provider_ssl_context(base_url: str):
         from hermes_cli.config import get_custom_provider_tls_settings
 
         tls = get_custom_provider_tls_settings(base_url)
-        if not tls:
-            return None
-        import ssl
+        if tls:
+            import ssl
 
-        if tls.get("ssl_verify") is False:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
-            return ctx
-        ca = tls.get("ssl_ca_cert")
-        if isinstance(ca, str) and ca and os.path.isfile(ca):
-            return ssl.create_default_context(cafile=ca)
+            if tls.get("ssl_verify") is False:
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+                return ctx
+            ca = tls.get("ssl_ca_cert")
+            if isinstance(ca, str) and ca and os.path.isfile(ca):
+                return ssl.create_default_context(cafile=ca)
     except Exception:
-        return None  # never break discovery on a TLS-config lookup
-    return None
+        pass  # never break discovery on a TLS-config lookup
+    try:
+        from hermes_cli.houdry_tls import ssl_context_for_url
+
+        return ssl_context_for_url(base_url)
+    except Exception:
+        return None
 
 
 # Fallback OpenRouter snapshot used when the live catalog is unavailable.

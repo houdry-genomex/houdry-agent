@@ -67,6 +67,48 @@ describe('scanPreferredControlPlane', () => {
     expect(hit?.source).toBe('wifi')
   })
 
+  it('ignores a loopback advertise so the WiFi scan never adopts 127.0.0.1', async () => {
+    stubFabric({
+      discover: async () => [
+        {
+          api: 'https://127.0.0.1:18080/v1',
+          auth: false,
+          name: 'leftover-local',
+          openai: true,
+          url: 'https://127.0.0.1:18080'
+        },
+        {
+          api: 'https://192.168.29.48:18080/v1',
+          auth: false,
+          name: 'houdry-hp',
+          openai: true,
+          url: 'https://192.168.29.48:18080'
+        }
+      ]
+    })
+
+    const hit = await scanPreferredControlPlane()
+
+    expect(hit?.api).toBe('https://192.168.29.48:18080/v1')
+    expect(hit?.source).toBe('wifi')
+  })
+
+  it('returns null when the only advertise is loopback', async () => {
+    stubFabric({
+      discover: async () => [
+        {
+          api: 'https://127.0.0.1:18080/v1',
+          auth: false,
+          name: 'leftover-local',
+          openai: true,
+          url: 'https://127.0.0.1:18080'
+        }
+      ]
+    })
+
+    expect(await scanPreferredControlPlane()).toBeNull()
+  })
+
   it('returns null when nothing answers', async () => {
     stubFabric({})
 

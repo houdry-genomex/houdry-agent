@@ -7804,13 +7804,16 @@ def _apply_model_assignment_sync(
         # provider. Dedups by base_url, so re-saving is idempotent.
         if provider.strip().lower() in {"custom", "local"} and base_url:
             try:
+                from hermes_cli.houdry_tls import pin_houdry_ca
                 from hermes_cli.main import _auto_provider_name, _save_custom_provider
 
+                ca_file = pin_houdry_ca(base_url) or None
                 _save_custom_provider(
                     base_url,
                     api_key,
                     model,
                     name=_auto_provider_name(base_url),
+                    ssl_ca_cert=ca_file,
                 )
             except Exception:
                 # Never block the assignment on the bookkeeping write —
@@ -8820,7 +8823,10 @@ async def validate_custom_endpoint(body: CustomEndpointUpdate):
         headers["Authorization"] = f"Bearer {body.api_key.strip()}"
 
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0)) as client:
+        from hermes_cli.houdry_tls import httpx_verify_for_url
+
+        verify = httpx_verify_for_url(base_url)
+        async with httpx.AsyncClient(timeout=httpx.Timeout(8.0), verify=verify) as client:
             resp = await client.get(url, headers=headers)
     except Exception:
         return {"ok": False, "reachable": False, "message": f"Could not reach {url}.", "models": []}
@@ -8862,7 +8868,10 @@ async def validate_provider_credential(body: EnvVarUpdate, request: Request):
         api_key = (body.api_key or "").strip()
         headers = {"Authorization": f"Bearer {api_key}"} if api_key else None
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(8.0)) as client:
+            from hermes_cli.houdry_tls import httpx_verify_for_url
+
+            verify = httpx_verify_for_url(value)
+            async with httpx.AsyncClient(timeout=httpx.Timeout(8.0), verify=verify) as client:
                 resp = await client.get(url, headers=headers)
             return {"ok": True, "reachable": True, "message": "", "models": _parse_model_ids(resp)}
         except Exception:

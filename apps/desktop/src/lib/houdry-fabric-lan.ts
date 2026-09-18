@@ -29,12 +29,32 @@ export function pickPreferredFabricLan(list: FabricLanEndpoint[]): FabricLanEndp
   return list.reduce((best, ep) => (lanEndpointScore(ep) > lanEndpointScore(best) ? ep : best))
 }
 
+function isLoopbackLanHost(host: string): boolean {
+  let hostname = host
+
+  try {
+    hostname = new URL(host.includes('://') ? host : `http://${host}`).hostname
+  } catch {
+    hostname = host.split(':')[0] ?? host
+  }
+
+  const h = hostname.toLowerCase()
+
+  return h === '127.0.0.1' || h === 'localhost' || h === '::1'
+}
+
 export function uniqueFabricLan(list: FabricLanEndpoint[]): FabricLanEndpoint[] {
   const seen = new Set<string>()
   const seenName = new Map<string, number>()
   const out: FabricLanEndpoint[] = []
 
   for (const ep of list) {
+    // WiFi scan must never surface loopback — that is leftover local serve,
+    // not the control plane houdry discover prints on this SSID.
+    if (ep.source === 'wifi' && isLoopbackLanHost(ep.host)) {
+      continue
+    }
+
     if (seen.has(ep.api)) {
       continue
     }

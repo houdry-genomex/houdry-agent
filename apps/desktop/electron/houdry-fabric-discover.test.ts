@@ -92,6 +92,31 @@ describe('uniqueFabricEndpoints', () => {
     expect(out[1].name).toBe('other')
   })
 
+  it('drops loopback advertisements instead of preferring them over WiFi', () => {
+    const out = uniqueFabricEndpoints(
+      [
+        {
+          name: 'leftover-local',
+          url: 'https://127.0.0.1:18080',
+          api: 'https://127.0.0.1:18080/v1',
+          auth: false,
+          openai: true
+        },
+        {
+          name: 'houdry-hp',
+          url: 'https://192.168.29.48:18080',
+          api: 'https://192.168.29.48:18080/v1',
+          auth: false,
+          openai: true
+        }
+      ],
+      {}
+    )
+
+    expect(out).toHaveLength(1)
+    expect(out[0].url).toBe('https://192.168.29.48:18080')
+  })
+
   it('collapses one instance advertised on WiFi and WSL to the WiFi URL', () => {
     const out = uniqueFabricEndpoints(
       [
@@ -117,7 +142,7 @@ describe('uniqueFabricEndpoints', () => {
     expect(out[0].url).toBe('https://192.168.29.179:8090')
   })
 
-  it('rewrites this machine\'s WiFi/WSL ads to 127.0.0.1', () => {
+  it('keeps this machine\'s WiFi address instead of rewriting to 127.0.0.1', () => {
     const ifaces = {
       'vEthernet (WSL)': [
         {
@@ -162,8 +187,8 @@ describe('uniqueFabricEndpoints', () => {
     )
 
     expect(out).toHaveLength(1)
-    expect(out[0].url).toBe('https://127.0.0.1:8090')
-    expect(out[0].api).toBe('https://127.0.0.1:8090/v1')
+    expect(out[0].url).toBe('https://172.24.110.66:8090')
+    expect(out[0].api).toBe('https://172.24.110.66:8090/v1')
   })
 })
 

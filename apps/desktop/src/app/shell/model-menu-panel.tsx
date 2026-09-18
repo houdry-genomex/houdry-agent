@@ -5,10 +5,9 @@ import { useState } from 'react'
 import { useSessionView } from '@/app/chat/session-view'
 import { Codicon } from '@/components/ui/codicon'
 import { DropdownMenuItem, dropdownMenuRow } from '@/components/ui/dropdown-menu'
-import { getHermesConfigRecord, type HermesGateway } from '@/hermes'
+import { type HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
-import { decideFabricReconnect, isFabricInstall, savedInferenceFromConfig } from '@/lib/control-plane-reconnect'
-import { probeControlPlane, scanPreferredControlPlane } from '@/lib/control-plane-scan'
+import { scanPreferredControlPlane } from '@/lib/control-plane-scan'
 import { modelOptionsQueryKey, reconcileSelectionAfterCatalogRefresh, requestModelOptions } from '@/lib/model-options'
 import { currentPickerSelection } from '@/lib/model-status-label'
 import { DEFAULT_REASONING_EFFORT } from '@/lib/reasoning-effort'
@@ -85,53 +84,41 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
     modelOptions.data
   )
 
-  // "Refresh Models" doubles as "clear cache, rescan this WiFi for a Houdry
-  // control plane". Every click drops whatever endpoint is currently active
-  // and re-derives it fresh: run the WiFi-only discovery in
-  // `scanPreferredControlPlane` (never loopback — see control-plane-scan.ts),
-  // and never let an unreachable-or-loopback saved address survive the scan.
-  // Never blocks the catalog refresh below — any failure here just leaves the
-  // existing (possibly stale) endpoint and the catalog fetch still runs.
-  const rescanControlPlaneIfStale = async () => {
+  // "Refresh Models" = houdry discover on this WiFi, then reload the catalog.
+  // Always UDP-scans (port 41808), even if Azure or a stale 127.0.0.1 URL is saved.
+  const rescanControlPlaneOnWifi = async (): Promise<boolean> => {
     try {
-      const saved = savedInferenceFromConfig(await getHermesConfigRecord())
+      const discovered = await scanPreferredControlPlane()
 
-      if (!isFabricInstall(saved)) {
-        // Plain API-key provider (Azure, OpenAI, …) — nothing to rescan.
-        return
-      }
-
-      const [discovered, savedReachable] = await Promise.all([
-        scanPreferredControlPlane(),
-        saved?.baseUrl ? probeControlPlane(saved.baseUrl) : Promise.resolve(false)
-      ])
-
-      const decision = decideFabricReconnect({
-        configured: true,
-        discoveredApi: discovered?.api ?? null,
-        saved,
-        savedLoaded: true,
-        savedReachable
-      })
-
-      if (decision.action === 'adopt') {
-        await saveOnboardingLocalEndpoint(decision.api, '', { profile, requestGateway })
-        return
-      }
-
-      if (decision.action !== 'keep') {
-        // Fresh WiFi scan came back empty — say so instead of silently
-        // leaving whatever (possibly stale/loopback) address was cached.
+      if (!discovered?.api) {
         notify({
           kind: 'info',
           message: 'No Houdry control plane found on this WiFi.',
           title: 'Refresh Models'
         })
+        return false
       }
-    } catch {
-      // No saved fabric endpoint, no LAN reachable, or a plain provider
-      // (API-key based) — nothing to rescan. Fall through to the normal
-      // catalog refresh below.
+
+      const saved = await saveOnboardingLocalEndpoint(discovered.api, '', { profile, requestGateway })
+
+      if (!saved.ok) {
+        notify({
+          kind: 'error',
+          message: saved.message || `Found ${discovered.host}, but could not connect.`,
+          title: 'Refresh Models'
+        })
+        return false
+      }
+
+      notify({
+        kind: 'success',
+        message: `Connected to ${discovered.host}`,
+        title: 'Houdry control plane'
+      })
+      return true
+    } catch (error) {
+      notifyError(error, 'Could not connect to the control plane on this WiFi')
+      return false
     }
   }
 
@@ -147,7 +134,11 @@ export function ModelMenuPanel({ gateway, onSelectModel, profile = 'default', re
     setRefreshing(true)
 
     try {
-      await rescanControlPlaneIfStale()
+      const connected = await rescanControlPlaneOnWifi()
+
+      if (!connected) {
+        return
+      }
 
       const queryKey = modelOptionsQueryKey(profile, activeSessionId)
 

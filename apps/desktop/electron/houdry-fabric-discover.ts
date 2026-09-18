@@ -175,11 +175,34 @@ export function ipv4IsAssignedToThisHost(
   return false
 }
 
+function isLoopbackFabricHost(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase()
+
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1'
+  } catch {
+    return false
+  }
+}
+
+/** Hyper-V/WSL/VM NICs are not the WiFi the user is picking a control plane on. */
+export const VIRTUAL_IFACE_NAME =
+  /vEthernet|WSL|Hyper-V|docker|VMware|VirtualBox|vboxnet|vmnet|ZeroTier|Hamachi/i
+
 function uniqueFabricEndpointsOn(
   list: HoudryFabricEndpoint[],
   ifaces: NodeJS.Dict<NetworkInterfaceInfo[]>
 ): HoudryFabricEndpoint[] {
-  const rewritten = list.map(ep => preferLoopbackIfLocal(ep, ifaces))
+  // Keep the advertised LAN IP. Never rewrite to 127.0.0.1, and drop loopback
+  // ads so Agent on a GPU laptop cannot adopt a leftover local serve.
+  const rewritten = list
+    .map(ep => {
+      const url = rewriteHoudryHttps(ep.url)
+      const api = rewriteHoudryHttps(ep.api)
+
+      return url === ep.url && api === ep.api ? ep : { ...ep, url, api }
+    })
+    .filter(ep => !isLoopbackFabricHost(ep.url))
   const seenUrl = new Map<string, number>()
   const byUrl: HoudryFabricEndpoint[] = []
 
@@ -210,7 +233,7 @@ function uniqueFabricEndpointsOn(
       const existing = seenName.get(name)
 
       if (existing !== undefined) {
-        if (lanAddressScore(ep.url) > lanAddressScore(out[existing].url)) {
+        if (lanPickScore(ep, ifaces) > lanPickScore(out[existing], ifaces)) {
           out[existing] = ep
         }
 
@@ -226,9 +249,52 @@ function uniqueFabricEndpointsOn(
   return out
 }
 
-/** Higher is a better pick for "this WiFi": prefer 192.168 over WSL/Hyper-V 172.x.
- *  Loopback wins when the advertisement is this machine — Agent must not use a
- *  Hyper-V 172.x URL for a control plane that is already on 127.0.0.1. */
+function lanPickScore(
+  ep: HoudryFabricEndpoint,
+  ifaces: NodeJS.Dict<NetworkInterfaceInfo[]>
+): number {
+  let score = lanAddressScore(ep.url)
+
+  try {
+    const host = new URL(ep.url).hostname
+    const iface = ifaceNameForIpv4(host, ifaces)
+
+    if (iface && !VIRTUAL_IFACE_NAME.test(iface)) {
+      score += 25
+    }
+  } catch {
+    // Keep the RFC1918 score alone when the URL will not parse.
+  }
+
+  return score
+}
+
+function ifaceNameForIpv4(
+  host: string,
+  ifaces: NodeJS.Dict<NetworkInterfaceInfo[]>
+): string | null {
+  for (const [name, addrs] of Object.entries(ifaces)) {
+    if (!addrs) {
+      continue
+    }
+
+    for (const addr of addrs) {
+      const family = String(addr.family)
+
+      if (family !== 'IPv4' && family !== '4') {
+        continue
+      }
+
+      if (addr.address === host) {
+        return name
+      }
+    }
+  }
+
+  return null
+}
+
+/** Higher is a better pick for "this WiFi": prefer 192.168 over WSL/Hyper-V 172.x. */
 export function lanAddressScore(urlOrHost: string): number {
   let host = urlOrHost
 
@@ -268,10 +334,6 @@ export function lanAddressScore(urlOrHost: string): number {
 
   return 20
 }
-
-/** Hyper-V/WSL/VM NICs are not the WiFi the user is picking a control plane on. */
-export const VIRTUAL_IFACE_NAME =
-  /vEthernet|WSL|Hyper-V|docker|VMware|VirtualBox|vboxnet|vmnet|ZeroTier|Hamachi/i
 
 /** IPv4 directed broadcast for an address/netmask pair, or null if the pair is unusable. */
 export function ipv4Broadcast(address: string, netmask: string): string | null {

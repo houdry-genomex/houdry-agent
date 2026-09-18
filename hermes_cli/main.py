@@ -4899,7 +4899,7 @@ def _custom_provider_base_url_config_value(provider_info, resolved_base_url=""):
 
 def _save_custom_provider(
     base_url, api_key="", model="", context_length=None, name=None, api_mode=None,
-    key_env=""
+    key_env="", ssl_ca_cert=None
 ):
     """Save a custom endpoint to custom_providers in config.yaml.
 
@@ -4944,6 +4944,9 @@ def _save_custom_provider(
                 entry["key_env"] = key_env
                 entry.pop("api_key", None)
                 changed = True
+            if ssl_ca_cert and entry.get("ssl_ca_cert") != ssl_ca_cert:
+                entry["ssl_ca_cert"] = ssl_ca_cert
+                changed = True
             if changed:
                 cfg["custom_providers"] = providers
                 save_config(cfg)
@@ -4964,6 +4967,8 @@ def _save_custom_provider(
         entry["api_mode"] = api_mode
     if model and context_length:
         entry["models"] = {model: {"context_length": context_length}}
+    if ssl_ca_cert:
+        entry["ssl_ca_cert"] = ssl_ca_cert
 
     providers.append(entry)
     cfg["custom_providers"] = providers
