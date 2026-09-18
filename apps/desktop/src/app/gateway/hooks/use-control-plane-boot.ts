@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react'
 import { getHermesConfigRecord } from '@/hermes'
 import {
   decideFabricReconnect,
+  isLoopbackApi,
   savedInferenceFromConfig,
   type SavedInference
 } from '@/lib/control-plane-reconnect'
@@ -152,7 +153,12 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
         activeApi = null
 
         if (misses >= MAX_EMPTY_SCANS) {
-          setControlPlaneConnecting(saved?.baseUrl || null)
+          // Never surface a loopback address here: the whole point of this
+          // status is "still trying" — showing 127.0.0.1 would look like a
+          // control plane that exists, when this WiFi genuinely has none.
+          const savedBase = saved?.baseUrl?.trim() || null
+
+          setControlPlaneConnecting(savedBase && !isLoopbackApi(savedBase) ? savedBase : null)
         }
 
         await sleep(RESCAN_MS, abort.signal)

@@ -16,6 +16,11 @@ import type { ChildProcess } from 'node:child_process'
 import path from 'node:path'
 
 import { isControlPlaneWellKnown, probeHoudryControlPlane } from './houdry-fabric-discover'
+import { fabricHttpsApi, fabricHttpsOrigin, trustLocalHoudryCA } from './houdry-tls'
+
+function trustLocalCAAfterListen(): void {
+  trustLocalHoudryCA()
+}
 
 /** Keep in sync with FABRIC_LOOPBACK_PORTS in src/lib/local-inference-scan.ts */
 export const HOUDRY_FABRIC_PORTS = [18_080, 8090, 8080] as const
@@ -23,8 +28,8 @@ export const HOUDRY_ROUTER_PORT = HOUDRY_FABRIC_PORTS[0]
 export const HOUDRY_ROUTER_ADDR = `127.0.0.1:${HOUDRY_ROUTER_PORT}`
 /** Bind all interfaces so GPU hosts on the same WiFi can join this plane. */
 export const HOUDRY_ROUTER_LISTEN = `0.0.0.0:${HOUDRY_ROUTER_PORT}`
-export const HOUDRY_ROUTER_BASE_URL = `http://${HOUDRY_ROUTER_ADDR}/v1`
-export const HOUDRY_WELL_KNOWN_URL = `http://${HOUDRY_ROUTER_ADDR}/.well-known/houdry.json`
+export const HOUDRY_ROUTER_BASE_URL = `${fabricHttpsApi(HOUDRY_ROUTER_PORT)}`
+export const HOUDRY_WELL_KNOWN_URL = `${fabricHttpsOrigin(HOUDRY_ROUTER_PORT)}/.well-known/houdry.json`
 
 const READY_TIMEOUT_MS = 20_000
 const READY_POLL_MS = 400
@@ -103,7 +108,7 @@ export async function findListeningFabricPort(
   ports: readonly number[] = HOUDRY_FABRIC_PORTS
 ): Promise<number | null> {
   for (const port of ports) {
-    if (await probeHoudryControlPlane(`http://127.0.0.1:${port}`, fetchImpl, PROBE_TIMEOUT_MS)) {
+    if (await probeHoudryControlPlane(`https://127.0.0.1:${port}`, fetchImpl, PROBE_TIMEOUT_MS)) {
       return port
     }
   }
@@ -116,7 +121,7 @@ async function classifyLoopbackPort(
   fetchImpl: typeof fetch
 ): Promise<'busy' | 'fabric' | 'free'> {
   try {
-    const response = await fetchImpl(`http://127.0.0.1:${port}/.well-known/houdry.json`, {
+    const response = await fetchImpl(`https://127.0.0.1:${port}/.well-known/houdry.json`, {
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
     })
 
@@ -168,6 +173,7 @@ export async function startHoudryRouter(options: StartRouterOptions): Promise<St
 
   if (existing !== null) {
     log(`[houdry-router] already listening on 127.0.0.1:${existing}; adopting it`)
+    trustLocalCAAfterListen()
 
     return { child: null, port: existing, ready: true }
   }
@@ -215,7 +221,7 @@ export async function startHoudryRouter(options: StartRouterOptions): Promise<St
   child.once('exit', (code, signal) => log(`[houdry-router] exited (code=${code} signal=${signal})`))
 
   const deadline = now() + READY_TIMEOUT_MS
-  const origin = `http://127.0.0.1:${listenPort}`
+  const origin = `https://127.0.0.1:${listenPort}`
 
   while (now() < deadline) {
     if (child.exitCode !== null || child.signalCode !== null) {
@@ -226,6 +232,7 @@ export async function startHoudryRouter(options: StartRouterOptions): Promise<St
 
     if (await probeHoudryControlPlane(origin, fetchImpl, PROBE_TIMEOUT_MS)) {
       log(`[houdry-router] ready on 127.0.0.1:${listenPort}`)
+      trustLocalCAAfterListen()
 
       return { child, port: listenPort, ready: true }
     }

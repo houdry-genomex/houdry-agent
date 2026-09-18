@@ -2951,7 +2951,7 @@ export const zh: Translations = {
     recommended: '推荐',
     connected: '已连接',
     houdryFabricTitle: 'Houdry server URL',
-    houdryFabricPitch: 'PROD — 在此 WiFi 上查找 houdry serve，或粘贴 http://<host>:8080/v1',
+    houdryFabricPitch: 'PROD — 在此 WiFi 上查找 houdry serve，或粘贴 https://<host>:8080/v1',
     azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
     azureOpenAiPitch:
       'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → API Keys',

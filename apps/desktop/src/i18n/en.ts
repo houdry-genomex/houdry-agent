@@ -1132,7 +1132,7 @@ export const en: Translations = {
       noKeysMatch: 'No providers match your search.',
       localEndpoint: {
         title: 'Houdry server URL',
-        description: 'PROD — finds houdry serve on this WiFi, or paste http://<host>:8080/v1.'
+        description: 'PROD — finds houdry serve on this WiFi, or paste https://<host>:8080/v1.'
       },
       loading: 'Loading providers...'
     },
@@ -2772,7 +2772,7 @@ export const en: Translations = {
     recommended: 'Recommended',
     connected: 'Connected',
     houdryFabricTitle: 'Houdry server URL',
-    houdryFabricPitch: 'PROD — finds houdry serve on this WiFi, or paste http://<host>:8080/v1',
+    houdryFabricPitch: 'PROD — finds houdry serve on this WiFi, or paste https://<host>:8080/v1',
     azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
     azureOpenAiPitch:
       'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → Azure OpenAI',

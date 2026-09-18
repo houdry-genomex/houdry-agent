@@ -9,7 +9,7 @@
 
 model:
   # Alias of `custom`. With no base_url, this resolves to $HOUDRY_BASE_URL or
-  # http://127.0.0.1:18080/v1 — the fabric's OpenAI-compatible surface.
+  # https://127.0.0.1:18080/v1 — the fabric's OpenAI-compatible surface.
   provider: houdry
   # "auto" hands model choice to the fabric's router, which sizes the model to
   # the request. Pinning a specific model here would bypass that.

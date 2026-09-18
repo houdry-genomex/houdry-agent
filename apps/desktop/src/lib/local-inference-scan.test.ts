@@ -12,7 +12,7 @@ import {
 
 const OLLAMA = 'http://127.0.0.1:11434/v1'
 const LM_STUDIO = 'http://127.0.0.1:1234/v1'
-const FABRIC = 'http://127.0.0.1:18080/v1'
+const FABRIC = 'https://127.0.0.1:18080/v1'
 
 /** Every candidate refuses except the ones named, which serve `models`. */
 function probeServing(serving: Record<string, string[]>): LocalInferenceProbe {
@@ -117,19 +117,19 @@ describe('scanLocalFabric', () => {
 
   it('accepts houdry serve on 8080 only after identity is confirmed', async () => {
     const hit = await scanLocalFabric(
-      probeServing({ 'http://127.0.0.1:8080/v1': [] }),
-      identityFor('http://127.0.0.1:8080/v1')
+      probeServing({ 'https://127.0.0.1:8080/v1': [] }),
+      identityFor('https://127.0.0.1:8080/v1')
     )
 
     expect(hit).toEqual({
-      baseUrl: 'http://127.0.0.1:8080/v1',
+      baseUrl: 'https://127.0.0.1:8080/v1',
       label: 'Houdry fabric',
       models: ['auto']
     })
   })
 
   it('does not treat a reachable 8080 as fabric without identity', async () => {
-    const hit = await scanLocalFabric(probeServing({ 'http://127.0.0.1:8080/v1': [] }), async () => false)
+    const hit = await scanLocalFabric(probeServing({ 'https://127.0.0.1:8080/v1': [] }), async () => false)
 
     expect(hit).toBeNull()
   })
@@ -137,23 +137,23 @@ describe('scanLocalFabric', () => {
   it('still prefers 18080 when both loopback fabric ports answer', async () => {
     const hit = await scanLocalFabric(
       probeServing({
-        'http://127.0.0.1:18080/v1': ['auto'],
-        'http://127.0.0.1:8090/v1': ['auto'],
-        'http://127.0.0.1:8080/v1': ['auto']
+        'https://127.0.0.1:18080/v1': ['auto'],
+        'https://127.0.0.1:8090/v1': ['auto'],
+        'https://127.0.0.1:8080/v1': ['auto']
       }),
       async () => true
     )
 
-    expect(hit?.baseUrl).toBe('http://127.0.0.1:18080/v1')
+    expect(hit?.baseUrl).toBe('https://127.0.0.1:18080/v1')
   })
 
   it('finds houdry serve on 8090 when 18080 is not fabric', async () => {
     const hit = await scanLocalFabric(
-      probeServing({ 'http://127.0.0.1:8090/v1': ['auto'] }),
-      identityFor('http://127.0.0.1:8090/v1')
+      probeServing({ 'https://127.0.0.1:8090/v1': ['auto'] }),
+      identityFor('https://127.0.0.1:8090/v1')
     )
 
-    expect(hit?.baseUrl).toBe('http://127.0.0.1:8090/v1')
+    expect(hit?.baseUrl).toBe('https://127.0.0.1:8090/v1')
     expect(hit?.models).toEqual(['auto'])
   })
 

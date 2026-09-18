@@ -74,7 +74,7 @@ const API_KEY_OPTIONS: ApiKeyOption[] = [
     name: 'Houdry server URL',
     envKey: 'OPENAI_BASE_URL',
     docsUrl: 'https://github.com/houdry-genomex/houdry-agent/blob/main/docs/HOUDRY.md',
-    placeholder: 'http://127.0.0.1:18080/v1'
+    placeholder: 'https://127.0.0.1:18080/v1'
   }
 ]
 
@@ -384,7 +384,7 @@ export function ApiKeyForm({
   const [value, setValue] = useState(() => {
     const initial = options.find(o => o.envKey === initialEnvKey) ?? options[0]
 
-    return initial?.envKey === 'OPENAI_BASE_URL' ? (initial.placeholder ?? 'http://127.0.0.1:18080/v1') : ''
+    return initial?.envKey === 'OPENAI_BASE_URL' ? (initial.placeholder ?? 'https://127.0.0.1:18080/v1') : ''
   })
 
   // Optional endpoint API key, only used by the local / custom endpoint option
@@ -410,7 +410,7 @@ export function ApiKeyForm({
 
   const pick = (o: ApiKeyOption) => {
     setOption(o)
-    setValue(o.envKey === 'OPENAI_BASE_URL' ? (o.placeholder ?? 'http://127.0.0.1:18080/v1') : '')
+    setValue(o.envKey === 'OPENAI_BASE_URL' ? (o.placeholder ?? 'https://127.0.0.1:18080/v1') : '')
     setLocalKey('')
     setError(null)
     requestAnimationFrame(() => {

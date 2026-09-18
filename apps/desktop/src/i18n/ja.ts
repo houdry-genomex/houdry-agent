@@ -2370,7 +2370,7 @@ export const ja = defineLocale({
     recommended: '推奨',
     connected: '接続済み',
     houdryFabricTitle: 'Houdry server URL',
-    houdryFabricPitch: 'PROD — finds houdry serve on this WiFi, or paste http://<host>:8080/v1',
+    houdryFabricPitch: 'PROD — finds houdry serve on this WiFi, or paste https://<host>:8080/v1',
     azureOpenAiTitle: 'Azure OpenAI (GPT-5.6 Luna)',
     azureOpenAiPitch:
       'DEV — paste the Azure API key, then set endpoint and deployment under Settings → Providers → API Keys',

@@ -228,6 +228,7 @@ import {
   updateKnowledgeDocument
 } from './houdry-knowledge'
 import { resolveHoudryBinary, startHoudryRouter } from './houdry-router'
+import { configureHoudryTofu, trustLocalHoudryCA } from './houdry-tls'
 import { cursorPointInWindow } from './hud-cursor'
 import { startHudGameOverlayWatch } from './hud-game-overlay'
 import { applyHudResetBounds, defaultHudBounds } from './hud-geometry'
@@ -17528,6 +17529,7 @@ async function startLocalInferenceFabric() {
     })
 
     houdryRouterChild = child
+    trustLocalHoudryCA()
   } catch (cause) {
     rememberLog(`[houdry-router] start failed: ${cause instanceof Error ? cause.message : String(cause)}`)
   }
@@ -17551,6 +17553,7 @@ app.whenReady().then(() => {
   // Bring up the local inference fabric. Fire-and-forget: the app is usable
   // against Azure meanwhile, and startHoudryRouter reports failure rather than
   // throwing, so a missing binary must not block the window from opening.
+  configureHoudryTofu(app.getPath('userData'))
   void startLocalInferenceFabric()
 
   const systemCa = installWindowsSystemCaTrust(tls)

@@ -1741,6 +1741,45 @@ class TestWebServerEndpoints:
         assert not model_cfg.get("provider")
         assert not get_env_value(env_var), "deleted endpoint's key still in .env"
 
+    def test_deleting_direct_config_custom_clears_loopback_custom_providers(self):
+        """Settings used to hide delete for config.yaml-sourced ``custom``.
+
+        That row is synthesized from ``model.provider: custom`` + ``base_url``,
+        and the model picker also lists the matching ``custom_providers``
+        entry as ``Local (127.0.0.1:18080)``. Deleting it must drop both.
+        """
+        from hermes_cli.config import load_config, save_config
+
+        cfg = load_config()
+        cfg["model"] = {
+            "provider": "custom",
+            "default": "auto",
+            "base_url": "http://127.0.0.1:18080/v1",
+        }
+        cfg["custom_providers"] = [
+            {
+                "name": "Local (127.0.0.1:18080)",
+                "base_url": "http://127.0.0.1:18080/v1",
+                "model": "auto",
+            }
+        ]
+        save_config(cfg)
+
+        listed = self.client.get("/api/providers/custom-endpoints").json()
+        ids = {row["id"] for row in listed["endpoints"]}
+        assert "custom" in ids
+        assert "local-127-0-0-1-18080" in ids
+
+        deleted = self.client.request("DELETE", "/api/providers/custom-endpoints/custom")
+        assert deleted.status_code == 200
+        assert deleted.json()["endpoints"] == []
+
+        cfg = load_config()
+        model_cfg = cfg.get("model") or {}
+        assert not model_cfg.get("provider")
+        assert not model_cfg.get("base_url")
+        assert not (cfg.get("custom_providers") or [])
+
 
     def test_custom_endpoint_save_scopes_to_the_requested_profile(self):
         """``?profile=<name>`` must write into that profile's config.yaml.

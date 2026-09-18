@@ -58,9 +58,9 @@ describe('FabricLanPanel', () => {
   it('adopts a single control plane and shows its host', async () => {
     const { onAdopt } = renderPanel({
       discover: async () => [
-        ep({ api: 'http://192.168.1.10:8080/v1', name: 'houdry-lab', url: 'http://192.168.1.10:8080' })
+        ep({ api: 'https://192.168.1.10:8080/v1', name: 'houdry-lab', url: 'https://192.168.1.10:8080' })
       ],
-      selectedApi: 'http://192.168.1.10:8080/v1'
+      selectedApi: 'https://192.168.1.10:8080/v1'
     })
 
     await waitFor(() => {
@@ -69,14 +69,14 @@ describe('FabricLanPanel', () => {
 
     expect(screen.getByText('192.168.1.10:8080')).toBeTruthy()
     expect(screen.getByText('Found a control plane on this WiFi')).toBeTruthy()
-    expect(onAdopt).toHaveBeenCalledWith('http://192.168.1.10:8080/v1', 'auto')
+    expect(onAdopt).toHaveBeenCalledWith('https://192.168.1.10:8080/v1', 'auto')
   })
 
   it('lists several planes and does not auto-pick', async () => {
     const { onAdopt } = renderPanel({
       discover: async () => [
-        ep({ api: 'http://192.168.1.10:8080/v1', name: 'desk', url: 'http://192.168.1.10:8080' }),
-        ep({ api: 'http://192.168.1.40:8080/v1', name: 'workshop', url: 'http://192.168.1.40:8080' })
+        ep({ api: 'https://192.168.1.10:8080/v1', name: 'desk', url: 'https://192.168.1.10:8080' }),
+        ep({ api: 'https://192.168.1.40:8080/v1', name: 'workshop', url: 'https://192.168.1.40:8080' })
       ]
     })
 
@@ -90,14 +90,14 @@ describe('FabricLanPanel', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /workshop/ }))
 
-    expect(onAdopt).toHaveBeenCalledWith('http://192.168.1.40:8080/v1', 'pick')
+    expect(onAdopt).toHaveBeenCalledWith('https://192.168.1.40:8080/v1', 'pick')
   })
 
   it('falls back to this computer when WiFi is empty but loopback answers', async () => {
     const { onAdopt } = renderPanel({
       discover: async () => [],
-      scanThisComputer: async () => 'http://127.0.0.1:8080/v1',
-      selectedApi: 'http://127.0.0.1:8080/v1'
+      scanThisComputer: async () => 'https://127.0.0.1:8080/v1',
+      selectedApi: 'https://127.0.0.1:8080/v1'
     })
 
     await waitFor(() => {
@@ -108,27 +108,27 @@ describe('FabricLanPanel', () => {
       expect(screen.getByText('houdry serve on this machine')).toBeTruthy()
     })
 
-    expect(onAdopt).toHaveBeenCalledWith('http://127.0.0.1:8080/v1', 'auto')
+    expect(onAdopt).toHaveBeenCalledWith('https://127.0.0.1:8080/v1', 'auto')
   })
 
   it('prefers this computer over a WiFi advertisement of the same serve', async () => {
     const { onAdopt } = renderPanel({
       discover: async () => [
         ep({
-          api: 'http://172.24.110.66:8090/v1',
+          api: 'https://172.24.110.66:8090/v1',
           name: 'houdry-Lethal_laptop-8090',
-          url: 'http://172.24.110.66:8090'
+          url: 'https://172.24.110.66:8090'
         })
       ],
-      scanThisComputer: async () => 'http://127.0.0.1:8090/v1',
-      selectedApi: 'http://127.0.0.1:8090/v1'
+      scanThisComputer: async () => 'https://127.0.0.1:8090/v1',
+      selectedApi: 'https://127.0.0.1:8090/v1'
     })
 
     await waitFor(() => {
       expect(screen.getByText('This computer')).toBeTruthy()
     })
 
-    expect(onAdopt).toHaveBeenCalledWith('http://127.0.0.1:8090/v1', 'auto')
+    expect(onAdopt).toHaveBeenCalledWith('https://127.0.0.1:8090/v1', 'auto')
     expect(screen.queryByText('houdry-Lethal_laptop-8090')).toBeNull()
   })
 })

@@ -272,18 +272,16 @@ export function CustomEndpointsSettings({ onConfigSaved, onMainModelChanged }: C
                       {activating === endpoint.id ? <Loader2 className="animate-spin" /> : <Zap />}
                       Use
                     </Button>
-                    {endpoint.source !== 'direct-config' && (
-                      <Button
-                        className="hover:text-destructive"
-                        disabled={deleting === endpoint.id}
-                        onClick={() => void handleDelete(endpoint)}
-                        size="icon-sm"
-                        title="Delete endpoint"
-                        variant="ghost"
-                      >
-                        {deleting === endpoint.id ? <Loader2 className="animate-spin" /> : <Trash2 />}
-                      </Button>
-                    )}
+                    <Button
+                      className="hover:text-destructive"
+                      disabled={deleting === endpoint.id}
+                      onClick={() => void handleDelete(endpoint)}
+                      size="icon-sm"
+                      title="Remove endpoint"
+                      variant="ghost"
+                    >
+                      {deleting === endpoint.id ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                    </Button>
                   </div>
                 </div>
               ))

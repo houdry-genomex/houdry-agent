@@ -14,7 +14,7 @@ describe('parseHoudryAdvertise', () => {
       JSON.stringify({
         houdry: 'control-plane',
         v: 1,
-        url: 'http://192.168.1.10:8080',
+        url: 'https://192.168.1.10:8080',
         path: '/v1',
         name: 'houdry-lab',
         version: '0.6.0',
@@ -25,8 +25,8 @@ describe('parseHoudryAdvertise', () => {
 
     expect(ep).toEqual({
       name: 'houdry-lab',
-      url: 'http://192.168.1.10:8080',
-      api: 'http://192.168.1.10:8080/v1',
+      url: 'https://192.168.1.10:8080',
+      api: 'https://192.168.1.10:8080/v1',
       version: '0.6.0',
       auth: true,
       openai: true
@@ -38,8 +38,8 @@ describe('parseHoudryAdvertise', () => {
       JSON.stringify({ houdry: 'control-plane', v: 1, url: 'http://10.0.0.5:8080/' })
     )
 
-    expect(ep?.api).toBe('http://10.0.0.5:8080/v1')
-    expect(ep?.url).toBe('http://10.0.0.5:8080')
+    expect(ep?.api).toBe('https://10.0.0.5:8080/v1')
+    expect(ep?.url).toBe('https://10.0.0.5:8080')
   })
 
   it('ignores probes and junk', () => {
@@ -66,22 +66,22 @@ describe('uniqueFabricEndpoints', () => {
     const out = uniqueFabricEndpoints([
       {
         name: '',
-        url: 'http://a:8080',
-        api: 'http://a:8080/v1',
+        url: 'https://a:8080',
+        api: 'https://a:8080/v1',
         auth: false,
         openai: true
       },
       {
         name: 'desk',
-        url: 'http://a:8080',
-        api: 'http://a:8080/v1',
+        url: 'https://a:8080',
+        api: 'https://a:8080/v1',
         auth: false,
         openai: true
       },
       {
         name: 'other',
-        url: 'http://b:8080',
-        api: 'http://b:8080/v1',
+        url: 'https://b:8080',
+        api: 'https://b:8080/v1',
         auth: false,
         openai: true
       }
@@ -97,15 +97,15 @@ describe('uniqueFabricEndpoints', () => {
       [
       {
         name: 'houdry-Lethal_laptop-8090',
-        url: 'http://172.23.96.1:8090',
-        api: 'http://172.23.96.1:8090/v1',
+        url: 'https://172.23.96.1:8090',
+        api: 'https://172.23.96.1:8090/v1',
         auth: false,
         openai: true
       },
       {
         name: 'houdry-Lethal_laptop-8090',
-        url: 'http://192.168.29.179:8090',
-        api: 'http://192.168.29.179:8090/v1',
+        url: 'https://192.168.29.179:8090',
+        api: 'https://192.168.29.179:8090/v1',
         auth: false,
         openai: true
       }
@@ -114,7 +114,7 @@ describe('uniqueFabricEndpoints', () => {
     )
 
     expect(out).toHaveLength(1)
-    expect(out[0].url).toBe('http://192.168.29.179:8090')
+    expect(out[0].url).toBe('https://192.168.29.179:8090')
   })
 
   it('rewrites this machine\'s WiFi/WSL ads to 127.0.0.1', () => {
@@ -145,15 +145,15 @@ describe('uniqueFabricEndpoints', () => {
       [
         {
           name: 'houdry-Lethal_laptop-8090',
-          url: 'http://172.23.96.1:8090',
-          api: 'http://172.23.96.1:8090/v1',
+          url: 'https://172.23.96.1:8090',
+          api: 'https://172.23.96.1:8090/v1',
           auth: false,
           openai: true
         },
         {
           name: 'houdry-Lethal_laptop-8090',
-          url: 'http://172.24.110.66:8090',
-          api: 'http://172.24.110.66:8090/v1',
+          url: 'https://172.24.110.66:8090',
+          api: 'https://172.24.110.66:8090/v1',
           auth: false,
           openai: true
         }
@@ -162,8 +162,8 @@ describe('uniqueFabricEndpoints', () => {
     )
 
     expect(out).toHaveLength(1)
-    expect(out[0].url).toBe('http://127.0.0.1:8090')
-    expect(out[0].api).toBe('http://127.0.0.1:8090/v1')
+    expect(out[0].url).toBe('https://127.0.0.1:8090')
+    expect(out[0].api).toBe('https://127.0.0.1:8090/v1')
   })
 })
 

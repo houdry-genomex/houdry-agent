@@ -53,8 +53,8 @@ export type LocalInferenceProbe = (baseUrl: string) => Promise<{
  * for the length of a connect timeout.
  */
 export const LOCAL_INFERENCE_CANDIDATES: readonly LocalInferenceCandidate[] = [
-  { baseUrl: 'http://127.0.0.1:18080/v1', label: 'Houdry fabric', allowEmptyCatalog: true },
-  { baseUrl: 'http://127.0.0.1:8090/v1', label: 'Houdry fabric', allowEmptyCatalog: true },
+  { baseUrl: 'https://127.0.0.1:18080/v1', label: 'Houdry fabric', allowEmptyCatalog: true },
+  { baseUrl: 'https://127.0.0.1:8090/v1', label: 'Houdry fabric', allowEmptyCatalog: true },
   { baseUrl: 'http://127.0.0.1:11434/v1', label: 'Ollama' },
   { baseUrl: 'http://127.0.0.1:1234/v1', label: 'LM Studio' },
   { baseUrl: 'http://127.0.0.1:8080/v1', label: 'llama.cpp' },
@@ -70,7 +70,7 @@ export const LOCAL_INFERENCE_CANDIDATES: readonly LocalInferenceCandidate[] = [
 export const FABRIC_LOOPBACK_PORTS = [18_080, 8090, 8080] as const
 
 export const FABRIC_LOOPBACK_CANDIDATES: readonly LocalInferenceCandidate[] = FABRIC_LOOPBACK_PORTS.map(port => ({
-  baseUrl: `http://127.0.0.1:${port}/v1`,
+  baseUrl: `https://127.0.0.1:${port}/v1`,
   label: 'Houdry fabric',
   allowEmptyCatalog: true
 }))

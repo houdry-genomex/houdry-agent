@@ -73,7 +73,7 @@ export function resolveArtifactUrl(origin: string | undefined, value: string | u
 
   // Parsed, not string-matched: `127.0.0.1:8080@evil.com` looks loopback-ish
   // but resolves to evil.com, and localArtifactUrl reads the real hostname.
-  return localArtifactUrl(`http://${origin}${path}`)
+  return localArtifactUrl(`https://${origin}${path}`)
 }
 
 interface Model3DViewerProps {

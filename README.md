@@ -35,13 +35,13 @@ curl -fsSL https://github.com/houdry-genomex/houdry/releases/latest/download/ins
 export PATH="$HOME/.houdry/bin:$PATH"
 houdry serve --listen 0.0.0.0:18080
 # other terminal:
-houdry node join --server http://127.0.0.1:18080
+houdry node join --server https://127.0.0.1:18080
 ```
 
 **2. Agent defaults**
 
 On first run, pick **Houdry server URL** (recommended) and keep
-`http://127.0.0.1:18080/v1` (or your LAN/Tailscale fabric host). Optional API
+`https://127.0.0.1:18080/v1` (or your LAN/Tailscale fabric host). Optional API
 key: `houdry`. Or seed config without the UI:
 
 ```bash
@@ -54,7 +54,7 @@ Equivalent YAML:
 # ~/.houdry-agent/config.yaml  (created under HERMES_HOME-compatible layout)
 model:
   provider: custom
-  base_url: http://127.0.0.1:18080/v1
+  base_url: https://127.0.0.1:18080/v1
   default: auto
 ```
 

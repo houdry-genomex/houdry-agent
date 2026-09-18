@@ -1,6 +1,8 @@
 import dgram from 'node:dgram'
 import { type NetworkInterfaceInfo, networkInterfaces } from 'node:os'
 
+import { houdryHttpsGet, rewriteHoudryHttps } from './houdry-tls'
+
 /** Keep in sync with houdry/internal/discovery (UDPPort). */
 export const HOUDRY_FABRIC_UDP_PORT = 41808
 export const HOUDRY_FABRIC_MULTICAST = '239.255.77.77'
@@ -39,7 +41,7 @@ export function parseHoudryAdvertise(raw: string): HoudryFabricEndpoint | null {
     return null
   }
 
-  const url = msg.url.replace(/\/+$/, '')
+  const url = rewriteHoudryHttps(msg.url.replace(/\/+$/, ''))
   const path = msg.path && msg.path.startsWith('/') ? msg.path : '/v1'
 
   return {
@@ -74,19 +76,33 @@ export async function probeHoudryControlPlane(
   let url: string
 
   try {
-    url = `${new URL(origin).origin}/.well-known/houdry.json`
+    url = `${new URL(rewriteHoudryHttps(origin)).origin}/.well-known/houdry.json`
   } catch {
     return false
   }
 
-  try {
-    const response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) })
+  if (fetchImpl !== fetch) {
+    try {
+      const response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) })
 
-    if (!response.ok) {
+      if (!response.ok) {
+        return false
+      }
+
+      return isControlPlaneWellKnown(await response.json())
+    } catch {
+      return false
+    }
+  }
+
+  try {
+    const res = await houdryHttpsGet(url, { insecure: true, timeoutMs })
+
+    if (!res.ok) {
       return false
     }
 
-    return isControlPlaneWellKnown(await response.json())
+    return isControlPlaneWellKnown(JSON.parse(res.body) as unknown)
   } catch {
     return false
   }
@@ -117,16 +133,19 @@ export function preferLoopbackIfLocal(
   const port = parsed.port || (parsed.protocol === 'https:' ? '443' : '80')
 
   if (host === '127.0.0.1' || host === 'localhost') {
-    const url = `http://127.0.0.1:${port}`
+    const url = `https://127.0.0.1:${port}`
 
     return { ...ep, url, api: `${url}/v1` }
   }
 
   if (!ipv4IsAssignedToThisHost(host, ifaces)) {
-    return ep
+    const url = rewriteHoudryHttps(ep.url)
+    const api = rewriteHoudryHttps(ep.api)
+
+    return url === ep.url && api === ep.api ? ep : { ...ep, url, api }
   }
 
-  const url = `http://127.0.0.1:${port}`
+  const url = `https://127.0.0.1:${port}`
 
   return { ...ep, url, api: `${url}/v1` }
 }

@@ -8493,6 +8493,37 @@ def _custom_endpoint_response(cfg: Dict[str, Any]) -> Dict[str, Any]:
             "source": "direct-config",
         })
 
+    custom_list = cfg.get("custom_providers")
+    if isinstance(custom_list, list):
+        for raw_entry in custom_list:
+            if not isinstance(raw_entry, dict):
+                continue
+            base_url = str(raw_entry.get("base_url") or raw_entry.get("url") or "").strip()
+            if not base_url:
+                continue
+            name = str(raw_entry.get("name") or "").strip()
+            endpoint_id = _custom_endpoint_id(name or base_url)
+            if any(e["id"] == endpoint_id for e in endpoints):
+                continue
+            models = _models_from_custom_endpoint_entry(raw_entry)
+            endpoint_model = str(
+                raw_entry.get("model") or raw_entry.get("default_model") or (models[0] if models else "")
+            )
+            has_api_key, api_key_preview = _api_key_display(raw_entry)
+            endpoints.append({
+                "id": endpoint_id,
+                "name": name or endpoint_id,
+                "base_url": base_url,
+                "model": endpoint_model,
+                "models": models,
+                "context_length": raw_entry.get("context_length"),
+                "discover_models": bool(raw_entry.get("discover_models", True)),
+                "has_api_key": has_api_key,
+                "api_key_preview": api_key_preview,
+                "is_current": base_url.rstrip("/") == current_base_url.rstrip("/"),
+                "source": "custom_providers",
+            })
+
     return {
         "endpoints": endpoints,
         "current": {
@@ -8501,6 +8532,44 @@ def _custom_endpoint_response(cfg: Dict[str, Any]) -> Dict[str, Any]:
             "base_url": current_base_url,
         },
     }
+
+
+def _drop_custom_provider_list_entries(
+    cfg: Dict[str, Any],
+    *,
+    provider_key: str,
+    base_url: str = "",
+) -> bool:
+    """Remove matching rows from the legacy ``custom_providers:`` list.
+
+    That list is what the model picker labels ``Local (127.0.0.1:18080)``.
+    Deleting the Settings row must drop it too, or the picker keeps showing
+    a dead loopback catalog after the config.yaml ``Custom`` endpoint is gone.
+    """
+    custom_list = cfg.get("custom_providers")
+    if not isinstance(custom_list, list):
+        return False
+
+    wanted_url = base_url.strip().rstrip("/")
+    kept: List[Any] = []
+    dropped = False
+
+    for entry in custom_list:
+        if not isinstance(entry, dict):
+            kept.append(entry)
+            continue
+        name = str(entry.get("name") or "").strip()
+        url = str(entry.get("base_url") or entry.get("url") or "").strip().rstrip("/")
+        entry_id = _custom_endpoint_id(name or url)
+        if entry_id == provider_key or (wanted_url and url == wanted_url):
+            dropped = True
+            continue
+        kept.append(entry)
+
+    if dropped:
+        cfg["custom_providers"] = kept
+
+    return dropped
 
 
 def _detach_main_model_from_provider(cfg: Dict[str, Any], provider_key: str) -> None:
@@ -8693,17 +8762,37 @@ def activate_custom_endpoint(endpoint_id: str, profile: Optional[str] = None):
 
 @app.delete("/api/providers/custom-endpoints/{endpoint_id}")
 def delete_custom_endpoint(endpoint_id: str, profile: Optional[str] = None):
-    """Remove a configured custom endpoint from ``providers``."""
+    """Remove a configured custom endpoint from ``providers``, ``model``, or ``custom_providers``."""
     try:
         with _config_profile_scope(profile):
             cfg = load_config()
             provider_key = _custom_endpoint_id(endpoint_id)
+            model_cfg = cfg.get("model") if isinstance(cfg.get("model"), dict) else {}
+            current_base = str(model_cfg.get("base_url") or "").strip()
+            removed = False
+
             providers = cfg.get("providers")
-            if not isinstance(providers, dict) or provider_key not in providers:
+            if isinstance(providers, dict) and provider_key in providers:
+                entry = providers.pop(provider_key)
+                cfg["providers"] = providers
+                if isinstance(entry, dict) and not current_base:
+                    current_base = str(entry.get("base_url") or "").strip()
+                removed = True
+
+            if str(model_cfg.get("provider") or "").strip().lower() == provider_key:
+                if not current_base:
+                    current_base = str(model_cfg.get("base_url") or "").strip()
+                _detach_main_model_from_provider(cfg, provider_key)
+                removed = True
+
+            if _drop_custom_provider_list_entries(
+                cfg, provider_key=provider_key, base_url=current_base
+            ):
+                removed = True
+
+            if not removed:
                 raise HTTPException(status_code=404, detail="custom endpoint not found")
-            providers.pop(provider_key, None)
-            cfg["providers"] = providers
-            _detach_main_model_from_provider(cfg, provider_key)
+
             remove_env_value(custom_endpoint_key_env(provider_key))
             save_config(cfg)
             response = _custom_endpoint_response(cfg)

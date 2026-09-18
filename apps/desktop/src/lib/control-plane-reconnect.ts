@@ -33,6 +33,23 @@ export function sameFabricApi(a: string, b: string): boolean {
   return normalizeFabricApi(a) === normalizeFabricApi(b)
 }
 
+/**
+ * True for 127.0.0.1 / localhost / ::1. A saved value that resolves here must
+ * never be silently "kept" by `decideFabricReconnect` — the whole point of
+ * the WiFi scan is to show the control plane's real LAN address, and a stale
+ * loopback entry (e.g. left over from running `houdry serve` on this same
+ * machine once) is exactly the "Local host control plane" bug this blocks.
+ */
+export function isLoopbackApi(api: string): boolean {
+  try {
+    const host = new URL(api.trim()).hostname
+
+    return host === '127.0.0.1' || host === 'localhost' || host === '::1'
+  } catch {
+    return false
+  }
+}
+
 export function fabricApiOrigin(api: string): string | null {
   try {
     const url = new URL(api.trim())
@@ -97,7 +114,49 @@ export function isFabricInstall(saved: SavedInference | null): boolean {
     return true
   }
 
-  return saved.baseUrl.toLowerCase().startsWith('http://')
+  const url = saved.baseUrl.toLowerCase()
+
+  if (url.startsWith('http://')) {
+    return true
+  }
+
+  if (!url.startsWith('https://')) {
+    return false
+  }
+
+  try {
+    const parsed = new URL(saved.baseUrl)
+    const host = parsed.hostname
+    const port = parsed.port
+
+    if (host === '127.0.0.1' || host === 'localhost') {
+      return true
+    }
+
+    if (['18080', '8090', '8080'].includes(port)) {
+      return true
+    }
+
+    const parts = host.split('.').map(Number)
+
+    if (parts.length === 4 && parts.every(n => Number.isInteger(n) && n >= 0 && n <= 255)) {
+      if (parts[0] === 10) {
+        return true
+      }
+
+      if (parts[0] === 192 && parts[1] === 168) {
+        return true
+      }
+
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) {
+        return true
+      }
+    }
+  } catch {
+    return false
+  }
+
+  return false
 }
 
 export function decideFabricReconnect(input: {
@@ -122,7 +181,7 @@ export function decideFabricReconnect(input: {
 
     const savedApi = input.saved?.baseUrl.trim() ?? ''
 
-    if (input.savedReachable && savedApi) {
+    if (input.savedReachable && savedApi && !isLoopbackApi(savedApi)) {
       return { action: 'keep', api: normalizeFabricApi(savedApi) }
     }
 

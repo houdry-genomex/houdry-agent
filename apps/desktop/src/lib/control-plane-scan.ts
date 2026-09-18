@@ -1,12 +1,6 @@
 import type { DesktopHoudryFabricEndpoint } from '@/global'
 import { fabricApiOrigin } from '@/lib/control-plane-reconnect'
-import {
-  type FabricLanEndpoint,
-  fromWifiAdvertise,
-  mergeFabricLanScan,
-  pickPreferredFabricLan
-} from '@/lib/houdry-fabric-lan'
-import { FABRIC_LOOPBACK_PORTS } from '@/lib/local-inference-scan'
+import { type FabricLanEndpoint, fromWifiAdvertise, pickPreferredFabricLan, uniqueFabricLan } from '@/lib/houdry-fabric-lan'
 
 async function discoverWifi(): Promise<DesktopHoudryFabricEndpoint[]> {
   try {
@@ -14,28 +8,6 @@ async function discoverWifi(): Promise<DesktopHoudryFabricEndpoint[]> {
   } catch {
     return []
   }
-}
-
-async function scanLoopbackControlPlane(): Promise<string | null> {
-  const isControlPlane = window.hermesDesktop?.houdryFabric?.isControlPlane
-
-  if (!isControlPlane) {
-    return null
-  }
-
-  for (const port of FABRIC_LOOPBACK_PORTS) {
-    const origin = `http://127.0.0.1:${port}`
-
-    try {
-      if (await isControlPlane(origin)) {
-        return `${origin}/v1`
-      }
-    } catch {
-      // Next port.
-    }
-  }
-
-  return null
 }
 
 /** True when `/.well-known/houdry.json` answers at this API or origin. */
@@ -54,11 +26,21 @@ export async function probeControlPlane(api: string): Promise<boolean> {
   }
 }
 
-/** UDP WiFi ads + loopback `/.well-known/houdry.json`. Loopback wins when both answer. */
+/**
+ * WiFi-only. This feeds the always-on background reconnect
+ * (`useControlPlaneBoot`) and the "Refresh Models" rescan, so it must never
+ * surface a loopback (127.0.0.1) hit here — a control plane running on this
+ * same machine is still reachable through its real LAN address via the mDNS/
+ * UDP WiFi advertisement (houdry serve binds 0.0.0.0 and announces its actual
+ * interface IP), so there is no case where loopback is the only way to reach
+ * it. Silently preferring 127.0.0.1 is exactly the "shows localhost instead
+ * of the WiFi IP" bug this guards against; see `houdry-fabric-lan.ts` for the
+ * separate, user-driven "This Computer" picker used during manual onboarding.
+ */
 export async function scanControlPlane(): Promise<FabricLanEndpoint[]> {
-  const [wifi, loopback] = await Promise.all([discoverWifi(), scanLoopbackControlPlane()])
+  const wifi = await discoverWifi()
 
-  return mergeFabricLanScan(wifi.map(fromWifiAdvertise), loopback)
+  return uniqueFabricLan(wifi.map(fromWifiAdvertise))
 }
 
 export async function scanPreferredControlPlane(): Promise<FabricLanEndpoint | null> {

@@ -52,10 +52,10 @@ describe('the fabric artifact directive', () => {
       url: '/files/model-20260830-140721.step'
     })
     expect(resolveArtifactUrl(parsed?.attrs.origin, parsed?.attrs.url)).toBe(
-      'http://127.0.0.1:18080/files/model-20260830-140721.step'
+      'https://127.0.0.1:18080/files/model-20260830-140721.step'
     )
     expect(resolveArtifactUrl(parsed?.attrs.origin, parsed?.attrs.preview)).toBe(
-      'http://127.0.0.1:18080/files/model-20260830-140721.stl'
+      'https://127.0.0.1:18080/files/model-20260830-140721.stl'
     )
   })
 
@@ -73,8 +73,8 @@ describe('the fabric artifact directive', () => {
 
 describe('resolveArtifactUrl', () => {
   it('joins a loopback origin with a root-relative path', () => {
-    expect(resolveArtifactUrl('127.0.0.1:18080', '/files/a.stl')).toBe('http://127.0.0.1:18080/files/a.stl')
-    expect(resolveArtifactUrl('localhost:18080', 'files/a.stl')).toBe('http://localhost:18080/files/a.stl')
+    expect(resolveArtifactUrl('127.0.0.1:18080', '/files/a.stl')).toBe('https://127.0.0.1:18080/files/a.stl')
+    expect(resolveArtifactUrl('localhost:18080', 'files/a.stl')).toBe('https://localhost:18080/files/a.stl')
   })
 
   it('still accepts absolute URLs from an older fabric', () => {

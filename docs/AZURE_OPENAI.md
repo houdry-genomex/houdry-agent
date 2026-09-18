@@ -77,7 +77,7 @@ auto Responses routing for other GPT-5 deployments.
 ```yaml
 model:
   provider: custom   # or houdry
-  base_url: http://127.0.0.1:18080/v1
+  base_url: https://127.0.0.1:18080/v1
   default: auto
 ```
 
@@ -98,7 +98,7 @@ Then:
 ```bash
 # fabric must be up
 houdry serve --listen 0.0.0.0:18080
-houdry node join --server http://127.0.0.1:18080
+houdry node join --server https://127.0.0.1:18080
 hermes chat -q 'Reply with exactly: houdry-ok'
 ```
 
