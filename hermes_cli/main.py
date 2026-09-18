@@ -4848,13 +4848,9 @@ def _auto_provider_name(base_url: str) -> str:
     the default when prompting the user for a display name during custom
     endpoint setup.
 
-    Houdry's control plane always fronts its OpenAI-compatible API on
-    loopback (127.0.0.1/localhost), even when it is routing jobs out to a GPU
-    worker on a different machine on the LAN — loopback here means "the
-    fabric API on this port", not "inference running on this laptop". Label
-    those endpoints by what they actually are (the control plane) instead of
-    "Local", which implies the models live on this machine when they may
-    live on a GPU laptop across the WiFi.
+    Houdry fabric endpoints (loopback or this WiFi's LAN IP on :18080/:8090)
+    are labelled as the control plane, not "Local" — the models they serve
+    may live on a GPU worker on another laptop.
     """
     import re
 
@@ -4865,7 +4861,7 @@ def _auto_provider_name(base_url: str) -> str:
     is_houdry_fabric = "houdry" in base_url.lower() or bool(
         re.search(r":(18080|8090)$", name)
     )
-    if is_loopback and is_houdry_fabric:
+    if is_houdry_fabric:
         name = f"Houdry fabric ({name})"
     elif is_loopback:
         name = f"Local ({name})"
@@ -4897,6 +4893,37 @@ def _custom_provider_base_url_config_value(provider_info, resolved_base_url=""):
     return str(resolved_base_url or "").strip()
 
 
+def _is_houdry_fabric_endpoint_url(url: str) -> bool:
+    raw = (url or "").strip().lower().rstrip("/")
+    if "houdry" in raw:
+        return True
+    return bool(re.search(r":(18080|8090)(?:/|$)", raw))
+
+
+def _drop_other_fabric_custom_providers(cfg, keep_url: str) -> None:
+    """Remove fabric rows for a different LAN IP so the picker follows this WiFi."""
+    keep = (keep_url or "").rstrip("/")
+    custom = cfg.get("custom_providers")
+    if isinstance(custom, list):
+        kept = []
+        for entry in custom:
+            if not isinstance(entry, dict):
+                kept.append(entry)
+                continue
+            url = str(entry.get("base_url") or entry.get("url") or "").rstrip("/")
+            if _is_houdry_fabric_endpoint_url(url) and url != keep:
+                continue
+            kept.append(entry)
+        cfg["custom_providers"] = kept
+    providers = cfg.get("providers")
+    if isinstance(providers, dict):
+        for key in [k for k, row in providers.items()
+                    if isinstance(row, dict)
+                    and _is_houdry_fabric_endpoint_url(str(row.get("base_url") or ""))
+                    and str(row.get("base_url") or "").rstrip("/") != keep]:
+            providers.pop(key, None)
+
+
 def _save_custom_provider(
     base_url, api_key="", model="", context_length=None, name=None, api_mode=None,
     key_env="", ssl_ca_cert=None
@@ -4913,6 +4940,11 @@ def _save_custom_provider(
     from hermes_cli.config import load_config, save_config
 
     cfg = load_config()
+    fabric_endpoint = _is_houdry_fabric_endpoint_url(base_url)
+    if fabric_endpoint:
+        # One control plane per WiFi: drop the previous SSID's IP so the
+        # picker and chat client follow the URL we just discovered.
+        _drop_other_fabric_custom_providers(cfg, base_url)
     providers = cfg.get("custom_providers") or []
     if not isinstance(providers, list):
         providers = []
@@ -4923,6 +4955,11 @@ def _save_custom_provider(
             "/"
         ) == base_url.rstrip("/"):
             changed = False
+            if fabric_endpoint:
+                auto = name or _auto_provider_name(base_url)
+                if entry.get("name") != auto:
+                    entry["name"] = auto
+                    changed = True
             if model and entry.get("model") != model:
                 entry["model"] = model
                 changed = True
@@ -4947,7 +4984,7 @@ def _save_custom_provider(
             if ssl_ca_cert and entry.get("ssl_ca_cert") != ssl_ca_cert:
                 entry["ssl_ca_cert"] = ssl_ca_cert
                 changed = True
-            if changed:
+            if changed or fabric_endpoint:
                 cfg["custom_providers"] = providers
                 save_config(cfg)
             return  # already saved, updated if needed

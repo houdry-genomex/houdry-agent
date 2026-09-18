@@ -151,16 +151,28 @@ describe('decideFabricReconnect', () => {
     ).toEqual({ action: 'skip' })
   })
 
-  it('keeps a fabric URL that still answers, even if WiFi also advertised another', () => {
+  it('adopts this WiFi plane even if a saved fabric URL on another subnet still answers', () => {
     expect(
       decideFabricReconnect({
         configured: true,
-        discoveredApi: 'https://10.0.0.9:18080/v1',
-        saved: { provider: 'custom', baseUrl: 'https://10.0.0.8:18080/v1' },
+        discoveredApi: 'https://192.168.1.15:18080/v1',
+        saved: { provider: 'custom', baseUrl: 'https://192.168.29.48:18080/v1' },
         savedLoaded: true,
         savedReachable: true
       })
-    ).toEqual({ action: 'keep', api: 'https://10.0.0.8:18080/v1' })
+    ).toEqual({ action: 'adopt', api: 'https://192.168.1.15:18080/v1' })
+  })
+
+  it('keeps the saved fabric URL when it is the same plane this WiFi advertised', () => {
+    expect(
+      decideFabricReconnect({
+        configured: true,
+        discoveredApi: 'https://192.168.1.15:18080/v1',
+        saved: { provider: 'custom', baseUrl: 'https://192.168.1.15:18080/v1' },
+        savedLoaded: true,
+        savedReachable: true
+      })
+    ).toEqual({ action: 'keep', api: 'https://192.168.1.15:18080/v1' })
   })
 
   it('adopts the new WiFi IP when the saved fabric URL is dead', () => {

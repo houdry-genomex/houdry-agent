@@ -32,7 +32,11 @@ export function useHoudryCatalogReconcile({
   })
 
   useEffect(() => {
-    const switchTo = reconcileSelectionAfterCatalogRefresh(currentModel, catalog.data?.providers)
+    const switchTo = reconcileSelectionAfterCatalogRefresh(
+      currentModel,
+      catalog.data?.providers,
+      currentProvider
+    )
 
     if (!switchTo || (switchTo.model === currentModel && switchTo.provider === currentProvider)) {
       attemptedKey.current = ''

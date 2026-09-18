@@ -82,14 +82,15 @@ export function firstSelectableCatalogModel(
 }
 
 /**
- * After Refresh Models replaces the catalog: keep the current pick when it is
- * still listed; otherwise switch to the first available model in the new
- * catalog. Returns null when the catalog is empty/unloaded so we never wipe
- * a selection on a failed or still-hydrating refresh.
+ * After Refresh Models replaces the catalog: keep the current pick when that
+ * provider still lists it; switch when the model is gone, or when the current
+ * provider group disappeared (stale WiFi IP) even if another group still
+ * offers the same model id.
  */
 export function reconcileSelectionAfterCatalogRefresh(
   currentModel: string,
-  providers: ModelOptionProvider[] | undefined
+  providers: ModelOptionProvider[] | undefined,
+  currentProvider?: string
 ): { model: string; provider: string } | null {
   const next = firstSelectableCatalogModel(providers)
 
@@ -99,6 +100,22 @@ export function reconcileSelectionAfterCatalogRefresh(
 
   if (isWeakAzureDefaultModel(currentModel) && next.model === HOUDRY_AZURE_DEFAULT_MODEL) {
     return next
+  }
+
+  const provider = (currentProvider ?? '').trim()
+
+  if (provider) {
+    const row = providers?.find(p => p.slug === provider || p.name === provider)
+
+    if (!row) {
+      const sameModel = providers?.find(p => (p.models ?? []).includes(currentModel) && p.slug !== MOA_PROVIDER_SLUG)
+
+      if (sameModel && currentModel) {
+        return { model: currentModel, provider: sameModel.slug }
+      }
+
+      return next
+    }
   }
 
   if (selectionInCatalog(providers, currentModel)) {

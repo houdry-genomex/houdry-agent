@@ -5,6 +5,7 @@ import { getHermesConfigRecord } from '@/hermes'
 import {
   decideFabricReconnect,
   isLoopbackApi,
+  sameFabricApi,
   savedInferenceFromConfig,
   type SavedInference
 } from '@/lib/control-plane-reconnect'
@@ -45,18 +46,14 @@ async function readSavedInference(): Promise<SavedInference | null> {
 }
 
 /**
- * Cold boot: find a Houdry control plane on loopback / this WiFi. First run
- * persists it. A venue change (new SSID / IP) rewrites the saved fabric URL
- * when the old one no longer answers — whether that happens before the first
- * connection (cold boot) or hours into a running session (laptop moves to a
- * different WiFi mid-use). Azure is left alone.
+ * Cold boot: find a Houdry control plane on this WiFi. First run persists it.
+ * A venue change (new SSID / IP) rewrites the saved fabric URL to whatever
+ * UDP advertised this scan — even if the previous IP still answers on a
+ * stale route. Azure is left alone.
  *
  * Runs for as long as the component is mounted: after connecting, it keeps
- * re-probing the active endpoint every `CONNECTED_RECHECK_MS` and, if it goes
- * unreachable, re-scans this WiFi and adopts whatever answers now. This is
- * the same decision `decideFabricReconnect` makes at cold boot, just applied
- * continuously so a WiFi switch doesn't require an app restart to recover
- * from.
+ * UDP-scanning this WiFi every `CONNECTED_RECHECK_MS` and adopts a newly
+ * advertised host even if the previous IP still answers. Azure is left alone.
  */
 export function useControlPlaneBoot(ctx: OnboardingContext) {
   const gatewayState = useStore($gatewayState)
@@ -92,7 +89,7 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
           continue
         }
 
-        if (onboarded && !savedLoaded) {
+        if (onboarded) {
           saved = await readSavedInference()
           savedLoaded = true
         }
@@ -103,18 +100,24 @@ export function useControlPlaneBoot(ctx: OnboardingContext) {
           if (abort.signal.aborted) {
             return
           }
-
-          if (await probeControlPlane(activeApi)) {
-            continue
-          }
-
-          // Still answering under the old address? Nothing to do. Otherwise
-          // treat it exactly like a stale saved value below, so the same
-          // decision logic that runs at cold boot picks the replacement.
-          saved = { baseUrl: activeApi, provider: saved?.provider ?? '' }
         }
 
         const discovered = await scanPreferredControlPlane()
+
+        // A still-reachable IP from another SSID must not skip the WiFi scan.
+        // If UDP advertised a different host, fall through and adopt it.
+        if (
+          activeApi &&
+          (!discovered?.api || sameFabricApi(discovered.api, activeApi)) &&
+          (await probeControlPlane(activeApi))
+        ) {
+          continue
+        }
+
+        if (activeApi) {
+          saved = { baseUrl: activeApi, provider: saved?.provider ?? 'custom' }
+        }
+
         const savedReachable = saved?.baseUrl ? await probeControlPlane(saved.baseUrl) : false
         const decision = decideFabricReconnect({
           configured: $desktopOnboarding.get().configured,

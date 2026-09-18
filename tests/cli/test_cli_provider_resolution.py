@@ -611,13 +611,12 @@ def test_auto_provider_name_localhost():
 
 
 def test_auto_provider_name_houdry_fabric_loopback():
-    # The fabric's OpenAI-compatible API is always on loopback, even when it
-    # routes jobs to a GPU worker on a different laptop. Label it as the
-    # control plane, not "Local" — the models it serves may not be on this
-    # machine at all.
+    # Control-plane OpenAI API on loopback or a LAN IP is labelled as the
+    # fabric, not "Local" — jobs may run on a GPU worker on another laptop.
     from hermes_cli.main import _auto_provider_name
     assert _auto_provider_name("http://127.0.0.1:18080/v1") == "Houdry fabric (127.0.0.1:18080)"
     assert _auto_provider_name("http://127.0.0.1:8090/v1") == "Houdry fabric (127.0.0.1:8090)"
+    assert _auto_provider_name("https://192.168.1.15:18080/v1") == "Houdry fabric (192.168.1.15:18080)"
     # A non-fabric loopback port stays "Local" even if it happens to be an
     # actual Ollama/LM Studio instance on this machine.
     assert _auto_provider_name("http://127.0.0.1:11434/v1") == "Local (127.0.0.1:11434)"
@@ -673,6 +672,55 @@ def test_save_custom_provider_references_the_key_instead_of_inlining_it(monkeypa
     assert entry["key_env"] == "HERMES_CUSTOM_LOCALHOST_11434_API_KEY"
     assert "api_key" not in entry
     assert "sk-secret" not in yaml.safe_dump(saved)
+
+
+def test_save_custom_provider_replaces_other_fabric_lan_ips(monkeypatch):
+    """A new WiFi control-plane IP must replace the previous SSID's fabric row.
+
+    Deduping by exact URL used to leave 192.168.29.48 in the picker after
+    discover found 192.168.1.15, so chat kept requesting the stale host.
+    """
+    from hermes_cli.main import _save_custom_provider
+
+    cfg = {
+        "custom_providers": [
+            {"name": "192.168.29.48:18080", "base_url": "https://192.168.29.48:18080/v1"},
+            {"name": "Ollama", "base_url": "http://localhost:11434/v1"},
+        ]
+    }
+    monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
+    saved = {}
+    monkeypatch.setattr("hermes_cli.config.save_config", lambda c: saved.update(c))
+
+    _save_custom_provider("https://192.168.1.15:18080/v1", model="auto")
+
+    entries = saved["custom_providers"]
+    urls = [e["base_url"] for e in entries]
+    names = [e["name"] for e in entries]
+    assert "https://192.168.1.15:18080/v1" in urls
+    assert "https://192.168.29.48:18080/v1" not in urls
+    assert "http://localhost:11434/v1" in urls
+    assert "Houdry fabric (192.168.1.15:18080)" in names
+
+
+def test_save_custom_provider_drops_stale_fabric_when_new_ip_already_saved(monkeypatch):
+    from hermes_cli.main import _save_custom_provider
+
+    cfg = {
+        "custom_providers": [
+            {"name": "192.168.29.48:18080", "base_url": "https://192.168.29.48:18080/v1"},
+            {"name": "192.168.1.15:18080", "base_url": "https://192.168.1.15:18080/v1", "model": "auto"},
+        ]
+    }
+    monkeypatch.setattr("hermes_cli.config.load_config", lambda: cfg)
+    saved = {}
+    monkeypatch.setattr("hermes_cli.config.save_config", lambda c: saved.update(c))
+
+    _save_custom_provider("https://192.168.1.15:18080/v1", model="auto")
+
+    entries = saved["custom_providers"]
+    assert [e["base_url"] for e in entries] == ["https://192.168.1.15:18080/v1"]
+    assert entries[0]["name"] == "Houdry fabric (192.168.1.15:18080)"
 
 
 

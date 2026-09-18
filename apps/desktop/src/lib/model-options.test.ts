@@ -272,6 +272,26 @@ describe('reconcileSelectionAfterCatalogRefresh', () => {
     expect(reconcileSelectionAfterCatalogRefresh('glm-4.5-air', [zhipu, moa])).toBeNull()
   })
 
+  it('switches provider when the same model moved to a new fabric IP group', () => {
+    const stale = {
+      name: '192.168.29.48:18080',
+      slug: 'custom:192.168.29.48:18080',
+      models: ['auto', 'Lfm2.5 Thinking:1.2b Med']
+    }
+    const live = {
+      name: 'Houdry fabric (192.168.1.15:18080)',
+      slug: 'custom:houdry-fabric-(192.168.1.15:18080)',
+      models: ['auto', 'Lfm2.5 Thinking:1.2b Med']
+    }
+
+    expect(
+      reconcileSelectionAfterCatalogRefresh('Lfm2.5 Thinking:1.2b Med', [live], stale.slug)
+    ).toEqual({
+      model: 'Lfm2.5 Thinking:1.2b Med',
+      provider: live.slug
+    })
+  })
+
   it('does not wipe the pick when the refreshed catalog has no selectable models', () => {
     expect(reconcileSelectionAfterCatalogRefresh('glm-4.5-air', [moa])).toBeNull()
     expect(reconcileSelectionAfterCatalogRefresh('glm-4.5-air', [])).toBeNull()

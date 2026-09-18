@@ -181,12 +181,21 @@ export function decideFabricReconnect(input: {
 
     const savedApi = input.saved?.baseUrl.trim() ?? ''
 
-    if (input.savedReachable && savedApi && !isLoopbackApi(savedApi)) {
-      return { action: 'keep', api: normalizeFabricApi(savedApi) }
+    // This WiFi's UDP advertise is the source of truth. A saved IP from
+    // another SSID (192.168.29.48 vs 192.168.1.15) must not win just because
+    // it still answers on a stale route.
+    if (input.discoveredApi) {
+      const discovered = normalizeFabricApi(input.discoveredApi)
+
+      if (!savedApi || isLoopbackApi(savedApi) || !sameFabricApi(savedApi, discovered)) {
+        return { action: 'adopt', api: discovered }
+      }
+
+      return { action: 'keep', api: discovered }
     }
 
-    if (input.discoveredApi) {
-      return { action: 'adopt', api: normalizeFabricApi(input.discoveredApi) }
+    if (input.savedReachable && savedApi && !isLoopbackApi(savedApi)) {
+      return { action: 'keep', api: normalizeFabricApi(savedApi) }
     }
 
     return { action: 'retry' }
